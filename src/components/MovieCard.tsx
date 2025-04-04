@@ -16,7 +16,7 @@ const MovieCard = ({ movie, isDragging, dragHandleProps }: MovieCardProps) => {
       {...dragHandleProps}
     >
       <div className="movie-rank">{movie.rank}</div>
-      <div className="movie-card-content">
+      <div className="movie-card-content pl-8">
         <h3 className="text-lg font-semibold">{movie.title}</h3>
       </div>
     </div>

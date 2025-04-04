@@ -80,7 +80,7 @@
 /* Movie Ranker custom styles */
 .movie-card {
   @apply relative bg-card shadow-md rounded-md overflow-hidden border transition-all;
-  min-height: 64px;
+  min-height: 72px;
   display: flex;
   align-items: center;
 }
@@ -90,7 +90,7 @@
 }
 
 .movie-rank {
-  @apply absolute top-0 left-0 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm z-10 m-3;
+  @apply absolute top-0 left-0 bg-primary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm z-10 m-3;
 }
 
 .movie-card-content {

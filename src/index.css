@@ -90,7 +90,7 @@
 }
 
 .movie-rank {
-  @apply absolute top-0 left-0 bg-primary text-primary-foreground rounded-full w-12 h-12 flex items-center justify-center font-bold text-lg z-10 m-3;
+  @apply absolute top-0 left-0 bg-primary text-primary-foreground rounded-full w-14 h-14 flex items-center justify-center font-bold text-lg z-10 m-2;
 }
 
 .movie-card-content {

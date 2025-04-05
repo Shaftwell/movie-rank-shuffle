@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import MovieCard from './MovieCard';
-import { Movie } from '@/types/movie';
+import { Movie, TMDBMovie, TMDBGenre } from '@/types/movie';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Search, ArrowDown, ArrowUp } from 'lucide-react';
@@ -28,22 +28,11 @@ interface MovieListProps {
   initialMovies: Movie[];
 }
 
-// Array of common movie genres
-const GENRES = [
-  "Action", "Adventure", "Animation", "Comedy", "Crime", 
-  "Drama", "Fantasy", "Horror", "Mystery", "Romance", 
-  "Sci-Fi", "Thriller", "Western"
-];
-
-// Sample movie poster placeholder images
-const PLACEHOLDER_IMAGES = [
-  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
-  "https://images.unsplash.com/photo-1500673922987-e212871fec22",
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-];
-
 // Movies per page
 const MOVIES_PER_PAGE = 20;
+
+// TMDB API base URL for images
+const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
 
 const MovieList = ({ initialMovies }: MovieListProps) => {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -53,30 +42,88 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [genres, setGenres] = useState<TMDBGenre[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { toast } = useToast();
 
-  // Initialize movies with sample data
+  // Fetch genres from TMDB API
   useEffect(() => {
-    const moviesWithDetails = initialMovies.map(movie => {
-      // Simulate movie details with random years, genres, RT scores, and images
-      const randomYear = Math.floor(Math.random() * 40) + 1984; // Random year between 1984-2023
-      const randomGenre = GENRES[Math.floor(Math.random() * GENRES.length)];
-      const randomScore = Math.floor(Math.random() * 100) + 1; // Random RT score between 1-100
-      const randomImage = PLACEHOLDER_IMAGES[Math.floor(Math.random() * PLACEHOLDER_IMAGES.length)];
-      
-      return {
-        ...movie,
-        year: randomYear,
-        genre: randomGenre,
-        favorite: false,
-        rottenTomatoesScore: randomScore,
-        imageUrl: randomImage + '?w=200&h=300&fit=crop&auto=format'
-      };
-    });
-    
-    setMovies(moviesWithDetails);
-  }, [initialMovies]);
+    const fetchGenres = async () => {
+      try {
+        const response = await fetch(
+          'https://api.themoviedb.org/3/genre/movie/list?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US'
+        );
+        const data = await response.json();
+        setGenres(data.genres);
+      } catch (error) {
+        console.error('Error fetching genres:', error);
+      }
+    };
+
+    fetchGenres();
+  }, []);
+
+  // Fetch movie details from TMDB API
+  useEffect(() => {
+    const fetchMovieDetails = async () => {
+      setIsLoading(true);
+      try {
+        const movieDetailsPromises = initialMovies.map(async (movie) => {
+          // Search for the movie to get TMDB ID
+          const searchResponse = await fetch(
+            `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(movie.title)}&include_adult=false`
+          );
+          const searchData = await searchResponse.json();
+          
+          if (searchData.results && searchData.results.length > 0) {
+            const tmdbMovie = searchData.results[0] as TMDBMovie;
+            
+            // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
+            const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
+            
+            // Get the first genre
+            const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
+              ? genres.find(g => g.id === tmdbMovie.genre_ids[0])?.name
+              : undefined;
+            
+            // Extract year from release date
+            const year = tmdbMovie.release_date 
+              ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
+              : undefined;
+            
+            // Get poster URL
+            const imageUrl = tmdbMovie.poster_path 
+              ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
+              : undefined;
+            
+            return {
+              ...movie,
+              year,
+              genre: genreName,
+              rottenTomatoesScore,
+              imageUrl,
+              favorite: false
+            };
+          }
+          
+          return movie;
+        });
+        
+        const moviesWithDetails = await Promise.all(movieDetailsPromises);
+        setMovies(moviesWithDetails);
+      } catch (error) {
+        console.error('Error fetching movie details:', error);
+        setMovies(initialMovies);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (genres.length > 0) {
+      fetchMovieDetails();
+    }
+  }, [initialMovies, genres]);
 
   // Apply filters and sorting
   useEffect(() => {
@@ -211,6 +258,11 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   };
 
   const totalPages = Math.ceil(filteredMovies.length / MOVIES_PER_PAGE);
+  
+  // Get unique genres from movies
+  const uniqueGenres = Array.from(
+    new Set(movies.filter(movie => movie.genre).map(movie => movie.genre))
+  ).filter(Boolean) as string[];
 
   return (
     <div className="container mx-auto py-8">
@@ -250,7 +302,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
             <SelectContent>
               <SelectGroup>
                 <SelectItem value="all">All Genres</SelectItem>
-                {GENRES.map((genre) => (
+                {uniqueGenres.map((genre) => (
                   <SelectItem key={genre} value={genre}>{genre}</SelectItem>
                 ))}
               </SelectGroup>
@@ -263,7 +315,11 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         Drag and drop movies to reorder. Click the star icon to add to favorites.
       </p>
 
-      {filteredMovies.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8">
+          <p className="text-lg">Loading movie data...</p>
+        </div>
+      ) : filteredMovies.length > 0 ? (
         <>
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="movie-list">

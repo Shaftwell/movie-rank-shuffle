@@ -43,7 +43,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
   const [displayedMovies, setDisplayedMovies] = useState<Movie[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -79,7 +79,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     }
     
     // Apply genre filter
-    if (selectedGenre) {
+    if (selectedGenre !== 'all') {
       result = result.filter(movie => movie.genre === selectedGenre);
     }
     
@@ -238,7 +238,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="">All Genres</SelectItem>
+                <SelectItem value="all">All Genres</SelectItem>
                 {GENRES.map((genre) => (
                   <SelectItem key={genre} value={genre}>{genre}</SelectItem>
                 ))}
@@ -356,7 +356,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
           <p className="text-lg">No movies found matching your criteria.</p>
           <Button variant="outline" onClick={() => {
             setSearchTerm('');
-            setSelectedGenre('');
+            setSelectedGenre('all');
           }} className="mt-4">
             Clear Filters
           </Button>

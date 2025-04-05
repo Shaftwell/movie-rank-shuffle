@@ -35,6 +35,13 @@ const GENRES = [
   "Sci-Fi", "Thriller", "Western"
 ];
 
+// Sample movie poster placeholder images
+const PLACEHOLDER_IMAGES = [
+  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
+  "https://images.unsplash.com/photo-1500673922987-e212871fec22",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+];
+
 // Movies per page
 const MOVIES_PER_PAGE = 20;
 
@@ -52,15 +59,19 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   // Initialize movies with sample data
   useEffect(() => {
     const moviesWithDetails = initialMovies.map(movie => {
-      // Simulate movie details with random years and genres
+      // Simulate movie details with random years, genres, RT scores, and images
       const randomYear = Math.floor(Math.random() * 40) + 1984; // Random year between 1984-2023
       const randomGenre = GENRES[Math.floor(Math.random() * GENRES.length)];
+      const randomScore = Math.floor(Math.random() * 100) + 1; // Random RT score between 1-100
+      const randomImage = PLACEHOLDER_IMAGES[Math.floor(Math.random() * PLACEHOLDER_IMAGES.length)];
       
       return {
         ...movie,
         year: randomYear,
         genre: randomGenre,
-        favorite: false
+        favorite: false,
+        rottenTomatoesScore: randomScore,
+        imageUrl: randomImage + '?w=200&h=300&fit=crop&auto=format'
       };
     });
     

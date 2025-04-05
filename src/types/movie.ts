@@ -7,4 +7,5 @@ export interface Movie {
   genre?: string;
   favorite?: boolean;
   imageUrl?: string;
+  rottenTomatoesScore?: number;
 }

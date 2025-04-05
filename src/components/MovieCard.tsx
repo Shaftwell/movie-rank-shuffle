@@ -2,9 +2,10 @@
 import React from 'react';
 import { Movie } from '@/types/movie';
 import { cn } from '@/lib/utils';
-import { Star, Film, Calendar } from 'lucide-react';
+import { Star, Film, Calendar, Percent } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface MovieCardProps {
   movie: Movie;
@@ -38,6 +39,19 @@ const MovieCard = ({
       <div className="movie-rank-container flex-shrink-0 w-20 flex justify-center items-center">
         <div className="movie-rank">{movie.rank}</div>
       </div>
+      
+      {movie.imageUrl && (
+        <div className="movie-poster w-16 h-24 flex-shrink-0 rounded overflow-hidden border mr-4">
+          <AspectRatio ratio={2/3}>
+            <img 
+              src={movie.imageUrl} 
+              alt={`${movie.title} poster`}
+              className="object-cover w-full h-full"
+            />
+          </AspectRatio>
+        </div>
+      )}
+      
       <div className="movie-card-content flex-grow flex justify-between items-center">
         <div className="movie-info">
           <HoverCard>
@@ -49,38 +63,75 @@ const MovieCard = ({
             <HoverCardContent className="movie-hover-card">
               <div className="flex flex-col gap-2">
                 <h4 className="font-bold text-xl">{movie.title}</h4>
-                {movie.year && (
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>{movie.year}</span>
+                
+                <div className="flex flex-wrap gap-y-2">
+                  {movie.imageUrl && (
+                    <div className="w-1/3 pr-2 flex-shrink-0">
+                      <AspectRatio ratio={2/3}>
+                        <img 
+                          src={movie.imageUrl} 
+                          alt={`${movie.title} poster`}
+                          className="object-cover w-full h-full rounded"
+                        />
+                      </AspectRatio>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col gap-2 flex-grow">
+                    {movie.year && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{movie.year}</span>
+                      </div>
+                    )}
+                    {movie.genre && (
+                      <div className="flex items-center gap-1">
+                        <Film className="h-4 w-4" />
+                        <span>{movie.genre}</span>
+                      </div>
+                    )}
+                    {movie.rottenTomatoesScore !== undefined && (
+                      <div className="flex items-center gap-1">
+                        <Percent className="h-4 w-4" />
+                        <span className={cn(
+                          movie.rottenTomatoesScore >= 60 ? "text-green-600" : "text-red-600",
+                          "font-medium"
+                        )}>
+                          {movie.rottenTomatoesScore}%
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {movie.genre && (
-                  <div className="flex items-center gap-1">
-                    <Film className="h-4 w-4" />
-                    <span>{movie.genre}</span>
-                  </div>
-                )}
+                </div>
               </div>
             </HoverCardContent>
           </HoverCard>
           
-          {(movie.year || movie.genre) && (
-            <div className="movie-meta text-sm text-muted-foreground flex items-center gap-2">
-              {movie.year && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {movie.year}
+          <div className="movie-meta text-sm text-muted-foreground flex items-center gap-2">
+            {movie.year && (
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {movie.year}
+              </span>
+            )}
+            {movie.genre && (
+              <span className="flex items-center gap-1">
+                <Film className="h-3 w-3" />
+                {movie.genre}
+              </span>
+            )}
+            {movie.rottenTomatoesScore !== undefined && (
+              <span className="flex items-center gap-1">
+                <Percent className="h-3 w-3" />
+                <span className={cn(
+                  movie.rottenTomatoesScore >= 60 ? "text-green-600" : "text-red-600", 
+                  "font-medium"
+                )}>
+                  {movie.rottenTomatoesScore}%
                 </span>
-              )}
-              {movie.genre && (
-                <span className="flex items-center gap-1">
-                  <Film className="h-3 w-3" />
-                  {movie.genre}
-                </span>
-              )}
-            </div>
-          )}
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="movie-actions">

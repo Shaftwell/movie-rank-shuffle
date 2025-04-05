@@ -70,9 +70,14 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       setIsLoading(true);
       try {
         const movieDetailsPromises = initialMovies.map(async (movie) => {
+          // Special case for "The Thomas Crown Affair" - specify it's the 1999 version
+          const searchQuery = movie.title === "The Thomas Crown Affair" 
+            ? "The Thomas Crown Affair 1999" 
+            : movie.title;
+          
           // Search for the movie to get TMDB ID
           const searchResponse = await fetch(
-            `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(movie.title)}&include_adult=false`
+            `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`
           );
           const searchData = await searchResponse.json();
           

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -86,6 +87,10 @@
   @apply shadow-lg border-primary/50 scale-[1.01];
 }
 
+.movie-favorite {
+  @apply border-yellow-400/50 bg-yellow-50/20;
+}
+
 .movie-rank-container {
   @apply h-full p-3;
 }
@@ -98,6 +103,22 @@
   @apply p-4;
 }
 
+.movie-meta {
+  @apply mt-1;
+}
+
+.movie-actions {
+  @apply flex items-center gap-2;
+}
+
+.favorite-button {
+  @apply transition-all hover:scale-110 hover:text-yellow-400;
+}
+
+.movie-hover-card {
+  @apply w-80;
+}
+
 /* Drag and drop styles */
 .movie-dragging {
   @apply opacity-60 border-dashed border-2 border-primary bg-primary/5;
@@ -105,4 +126,18 @@
 
 .movie-list {
   @apply space-y-3 p-4 md:p-6;
+}
+
+/* Animation utilities */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

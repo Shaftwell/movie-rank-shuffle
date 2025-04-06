@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import MovieCard from './MovieCard';
 import MovieEditDialog from './MovieEditDialog';
-import { Movie, TMDBMovie, TMDBGenre, MOVIES_STORAGE_KEY } from '@/types/movie';
+import { Movie, TMDBMovie, TMDBGenre, MOVIES_STORAGE_KEY, SortOption } from '@/types/movie';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Search, ArrowDown, ArrowUp } from 'lucide-react';
+import { Search, ArrowDown, ArrowUp, SortAsc, SortDesc } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
   Select,
@@ -34,6 +35,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
+  const [sortOption, setSortOption] = useState<SortOption>('rank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [genres, setGenres] = useState<TMDBGenre[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -175,16 +177,42 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     }
     
     // Apply sorting
-    result = result.sort((a, b) => {
-      if (sortDirection === 'asc') {
-        return a.rank - b.rank;
-      } else {
-        return b.rank - a.rank;
+    result = [...result].sort((a, b) => {
+      switch (sortOption) {
+        case 'rank':
+          return sortDirection === 'asc' 
+            ? a.rank - b.rank
+            : b.rank - a.rank;
+        
+        case 'title-asc':
+          return a.title.localeCompare(b.title);
+        
+        case 'title-desc':
+          return b.title.localeCompare(a.title);
+          
+        case 'year':
+          // Handle missing year values
+          const yearA = a.year || 0;
+          const yearB = b.year || 0;
+          return sortDirection === 'asc'
+            ? yearA - yearB
+            : yearB - yearA;
+            
+        case 'rating':
+          // Handle missing rating values
+          const ratingA = a.rottenTomatoesScore || 0;
+          const ratingB = b.rottenTomatoesScore || 0;
+          return sortDirection === 'asc'
+            ? ratingA - ratingB
+            : ratingB - ratingA;
+            
+        default:
+          return 0;
       }
     });
 
     setFilteredMovies(result);
-  }, [movies, searchTerm, selectedGenre, sortDirection]);
+  }, [movies, searchTerm, selectedGenre, sortOption, sortDirection]);
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source } = result;
@@ -243,7 +271,6 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         year: existingMovie?.year,
         searchYear: existingMovie?.searchYear,
         genre: existingMovie?.genre,
-        favorite: existingMovie?.favorite || false,
         imageUrl: existingMovie?.imageUrl,
         rottenTomatoesScore: existingMovie?.rottenTomatoesScore,
       };
@@ -258,27 +285,12 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     });
   };
 
-  const handleToggleFavorite = (id: number) => {
-    const updatedMovies = movies.map(movie => {
-      if (movie.id === id) {
-        const newFavoriteStatus = !movie.favorite;
-        
-        toast({
-          title: newFavoriteStatus ? "Added to Favorites" : "Removed from Favorites",
-          description: `"${movie.title}" has been ${newFavoriteStatus ? 'added to' : 'removed from'} your favorites.`,
-          duration: 2000,
-        });
-        
-        return { ...movie, favorite: newFavoriteStatus };
-      }
-      return movie;
-    });
-    
-    setMovies(updatedMovies);
-  };
-
   const toggleSortDirection = () => {
     setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  };
+
+  const handleSortOptionChange = (value: string) => {
+    setSortOption(value as SortOption);
   };
 
   const handleEditMovie = (id: number) => {
@@ -395,15 +407,33 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h2 className="text-2xl font-bold">My Top 100 Movies</h2>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={toggleSortDirection}
-              className="flex gap-1 items-center"
-            >
-              Sort {sortDirection === 'asc' ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            <Select value={sortOption} onValueChange={handleSortOptionChange}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="rank">Ranking</SelectItem>
+                  <SelectItem value="title-asc">Title A-Z</SelectItem>
+                  <SelectItem value="title-desc">Title Z-A</SelectItem>
+                  <SelectItem value="year">Year</SelectItem>
+                  <SelectItem value="rating">Rating</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            {(sortOption === 'rank' || sortOption === 'year' || sortOption === 'rating') && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleSortDirection}
+                className="flex gap-1 items-center"
+              >
+                {sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+              </Button>
+            )}
+            
             <Button variant="outline" size="sm" onClick={resetRankings}>
               Reset Rankings
             </Button>
@@ -441,7 +471,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       </div>
       
       <p className="text-muted-foreground mb-6">
-        Drag and drop movies to reorder. Click the star icon to add to favorites. Click the edit icon to modify titles.
+        Drag and drop movies to reorder. Click the edit icon to modify titles.
         Your changes are saved automatically.
       </p>
 
@@ -478,7 +508,6 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
                           movie={movie}
                           isDragging={snapshot.isDragging}
                           dragHandleProps={provided.dragHandleProps}
-                          onToggleFavorite={handleToggleFavorite}
                           onEditMovie={handleEditMovie}
                         />
                       </div>

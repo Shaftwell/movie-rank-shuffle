@@ -87,16 +87,13 @@
   @apply shadow-lg border-primary/50 scale-[1.01];
 }
 
-.movie-favorite {
-  @apply border-yellow-400/50 bg-yellow-50/20;
-}
-
 .movie-rank-container {
   @apply h-full p-3;
 }
 
 .movie-rank {
-  @apply bg-primary text-primary-foreground rounded-full w-12 h-12 flex items-center justify-center font-bold text-lg;
+  @apply bg-primary text-primary-foreground rounded-md w-10 h-10 flex items-center justify-center font-bold text-lg shadow-md;
+  font-variant-numeric: tabular-nums;
 }
 
 .movie-card-content {
@@ -109,10 +106,6 @@
 
 .movie-actions {
   @apply flex items-center gap-2;
-}
-
-.favorite-button {
-  @apply transition-all hover:scale-110 hover:text-yellow-400;
 }
 
 .movie-hover-card {

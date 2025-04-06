@@ -2,6 +2,9 @@
 import React from 'react';
 import MovieList from '@/components/MovieList';
 import { Movie } from '@/types/movie';
+import { Moon, Sun } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useTheme } from 'next-themes';
 
 const movieTitles = [
   "Out of Sight",
@@ -114,13 +117,24 @@ const Index = () => {
     rank: index + 1
   }));
 
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card py-6 border-b">
-        <div className="container mx-auto">
+        <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-3xl md:text-4xl font-bold text-center text-primary">
             Movie Rank Shuffle
           </h1>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            aria-label="Toggle theme"
+          >
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </Button>
         </div>
       </header>
       

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Movie } from '@/types/movie';
 import { cn } from '@/lib/utils';
-import { Star, Film, Calendar, Percent, Edit } from 'lucide-react';
+import { Film, Calendar, Percent, Edit } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -11,7 +11,6 @@ interface MovieCardProps {
   movie: Movie;
   isDragging: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
-  onToggleFavorite?: (id: number) => void;
   onEditMovie?: (id: number) => void;
 }
 
@@ -19,16 +18,8 @@ const MovieCard = ({
   movie, 
   isDragging, 
   dragHandleProps, 
-  onToggleFavorite,
   onEditMovie
 }: MovieCardProps) => {
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onToggleFavorite) {
-      onToggleFavorite(movie.id);
-    }
-  };
-
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onEditMovie) {
@@ -40,12 +31,11 @@ const MovieCard = ({
     <div
       className={cn(
         "movie-card flex items-center",
-        isDragging && "movie-dragging",
-        movie.favorite && "movie-favorite"
+        isDragging && "movie-dragging"
       )}
       {...dragHandleProps}
     >
-      <div className="movie-rank-container flex-shrink-0 w-20 flex justify-center items-center">
+      <div className="movie-rank-container flex-shrink-0 w-16 flex justify-center items-center">
         <div className="movie-rank">{movie.rank}</div>
       </div>
       
@@ -103,7 +93,7 @@ const MovieCard = ({
                       <div className="flex items-center gap-1">
                         <Percent className="h-4 w-4" />
                         <span className={cn(
-                          movie.rottenTomatoesScore >= 60 ? "text-green-600" : "text-red-600",
+                          movie.rottenTomatoesScore >= 60 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400",
                           "font-medium"
                         )}>
                           {movie.rottenTomatoesScore}%
@@ -133,7 +123,7 @@ const MovieCard = ({
               <span className="flex items-center gap-1">
                 <Percent className="h-3 w-3" />
                 <span className={cn(
-                  movie.rottenTomatoesScore >= 60 ? "text-green-600" : "text-red-600", 
+                  movie.rottenTomatoesScore >= 60 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400", 
                   "font-medium"
                 )}>
                   {movie.rottenTomatoesScore}%
@@ -143,7 +133,7 @@ const MovieCard = ({
           </div>
         </div>
         
-        <div className="movie-actions flex gap-1">
+        <div className="movie-actions">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -156,25 +146,6 @@ const MovieCard = ({
               </TooltipTrigger>
               <TooltipContent>
                 Edit movie title
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={handleFavoriteClick}
-                  className={cn(
-                    "favorite-button p-1 rounded-full", 
-                    movie.favorite ? "text-yellow-400" : "text-muted-foreground"
-                  )}
-                >
-                  <Star className="h-5 w-5" fill={movie.favorite ? "currentColor" : "none"} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {movie.favorite ? "Remove from favorites" : "Add to favorites"}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

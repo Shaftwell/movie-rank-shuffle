@@ -6,7 +6,6 @@ export interface Movie {
   year?: number;
   searchYear?: number; // Add this field to specify a year for search
   genre?: string;
-  favorite?: boolean;
   imageUrl?: string;
   rottenTomatoesScore?: number;
   isEditing?: boolean;
@@ -28,3 +27,6 @@ export interface TMDBGenre {
 
 // Local storage key for saving movie data
 export const MOVIES_STORAGE_KEY = 'movieRankShuffleData';
+
+// Sorting options
+export type SortOption = 'rank' | 'title-asc' | 'title-desc' | 'year' | 'rating';

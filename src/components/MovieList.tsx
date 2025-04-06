@@ -29,6 +29,9 @@ const SPECIAL_CASES: Record<string, { query: string, year?: number }> = {
   "Bloodsport (1988)": { query: "Bloodsport", year: 1988 },
   "Sherlock Holmes (2009)": { query: "Sherlock Holmes", year: 2009 },
   "Ocean's Eleven": { query: "Ocean's Eleven", year: 2001 },
+  "Parasite": { query: "Parasite", year: 2019 },
+  "Up": { query: "Up", year: 2009 },
+  "Gladiator": { query: "Gladiator", year: 2000 },
 };
 
 const MovieList = ({ initialMovies }: MovieListProps) => {

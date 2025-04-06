@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import MovieCard from './MovieCard';
@@ -26,8 +25,10 @@ const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
 
 // Special cases for remakes - map movie titles to specific search queries with years
 const SPECIAL_CASES: Record<string, { query: string, year?: number }> = {
-  "The Thomas Crown Affair": { query: "The Thomas Crown Affair", year: 1999 },
-  "Bloodsport": { query: "Bloodsport", year: 1988 },
+  "The Thomas Crown Affair (1999)": { query: "The Thomas Crown Affair", year: 1999 },
+  "Bloodsport (1988)": { query: "Bloodsport", year: 1988 },
+  "Sherlock Holmes (2009)": { query: "Sherlock Holmes", year: 2009 },
+  "Ocean's Eleven": { query: "Ocean's Eleven", year: 2001 },
 };
 
 const MovieList = ({ initialMovies }: MovieListProps) => {

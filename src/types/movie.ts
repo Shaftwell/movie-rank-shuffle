@@ -8,6 +8,7 @@ export interface Movie {
   favorite?: boolean;
   imageUrl?: string;
   rottenTomatoesScore?: number;
+  isEditing?: boolean;
 }
 
 export interface TMDBMovie {

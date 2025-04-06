@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import MovieCard from './MovieCard';
+import MovieEditDialog from './MovieEditDialog';
 import { Movie, TMDBMovie, TMDBGenre } from '@/types/movie';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +44,8 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [genres, setGenres] = useState<TMDBGenre[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -262,6 +264,98 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
   };
 
+  const handleEditMovie = (id: number) => {
+    const movieToEdit = movies.find(m => m.id === id);
+    if (movieToEdit) {
+      setEditingMovie(movieToEdit);
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleSaveMovieTitle = async (id: number, newTitle: string) => {
+    // Update the movie title
+    const updatedMovies = movies.map(movie => {
+      if (movie.id === id) {
+        return { ...movie, title: newTitle };
+      }
+      return movie;
+    });
+    
+    setMovies(updatedMovies);
+    
+    // Refresh data for the edited movie
+    try {
+      // Special case for "The Thomas Crown Affair" - specify it's the 1999 version
+      const searchQuery = newTitle === "The Thomas Crown Affair" 
+        ? "The Thomas Crown Affair 1999" 
+        : newTitle;
+      
+      // Search for the movie to get TMDB ID
+      const searchResponse = await fetch(
+        `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`
+      );
+      const searchData = await searchResponse.json();
+      
+      if (searchData.results && searchData.results.length > 0) {
+        const tmdbMovie = searchData.results[0] as TMDBMovie;
+        
+        // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
+        const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
+        
+        // Get the first genre
+        const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
+          ? genres.find(g => g.id === tmdbMovie.genre_ids[0])?.name
+          : undefined;
+        
+        // Extract year from release date
+        const year = tmdbMovie.release_date 
+          ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
+          : undefined;
+        
+        // Get poster URL
+        const imageUrl = tmdbMovie.poster_path 
+          ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
+          : undefined;
+        
+        // Update the movie with the new data
+        const refreshedMovies = movies.map(movie => {
+          if (movie.id === id) {
+            return {
+              ...movie,
+              title: newTitle,
+              year,
+              genre: genreName,
+              rottenTomatoesScore,
+              imageUrl
+            };
+          }
+          return movie;
+        });
+        
+        setMovies(refreshedMovies);
+        
+        toast({
+          title: "Movie Updated",
+          description: `"${newTitle}" has been updated with fresh data.`,
+          duration: 2000,
+        });
+      } else {
+        toast({
+          title: "Title Updated",
+          description: `Movie title changed to "${newTitle}". No additional data found.`,
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing movie data:', error);
+      toast({
+        title: "Update Error",
+        description: "Failed to refresh movie data. Title was updated.",
+        duration: 2000,
+      });
+    }
+  };
+
   const totalPages = Math.ceil(filteredMovies.length / MOVIES_PER_PAGE);
   
   // Get unique genres from movies
@@ -317,7 +411,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       </div>
       
       <p className="text-muted-foreground mb-6">
-        Drag and drop movies to reorder. Click the star icon to add to favorites.
+        Drag and drop movies to reorder. Click the star icon to add to favorites. Click the edit icon to modify titles.
       </p>
 
       {isLoading ? (
@@ -355,6 +449,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
                             isDragging={snapshot.isDragging}
                             dragHandleProps={provided.dragHandleProps}
                             onToggleFavorite={handleToggleFavorite}
+                            onEditMovie={handleEditMovie}
                           />
                         </div>
                       )}
@@ -434,6 +529,16 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
           </Button>
         </div>
       )}
+
+      <MovieEditDialog 
+        movie={editingMovie}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setEditingMovie(null);
+        }}
+        onSave={handleSaveMovieTitle}
+      />
     </div>
   );
 };

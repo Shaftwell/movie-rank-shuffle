@@ -2,7 +2,7 @@
 import React from 'react';
 import { Movie } from '@/types/movie';
 import { cn } from '@/lib/utils';
-import { Star, Film, Calendar, Percent } from 'lucide-react';
+import { Star, Film, Calendar, Percent, Edit } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -12,18 +12,27 @@ interface MovieCardProps {
   isDragging: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   onToggleFavorite?: (id: number) => void;
+  onEditMovie?: (id: number) => void;
 }
 
 const MovieCard = ({ 
   movie, 
   isDragging, 
   dragHandleProps, 
-  onToggleFavorite 
+  onToggleFavorite,
+  onEditMovie
 }: MovieCardProps) => {
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onToggleFavorite) {
       onToggleFavorite(movie.id);
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEditMovie) {
+      onEditMovie(movie.id);
     }
   };
 
@@ -134,7 +143,23 @@ const MovieCard = ({
           </div>
         </div>
         
-        <div className="movie-actions">
+        <div className="movie-actions flex gap-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={handleEditClick}
+                  className="edit-button p-1 rounded-full text-muted-foreground hover:text-foreground"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Edit movie title
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

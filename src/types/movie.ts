@@ -4,6 +4,7 @@ export interface Movie {
   title: string;
   rank: number;
   year?: number;
+  searchYear?: number; // Add this field to specify a year for search
   genre?: string;
   favorite?: boolean;
   imageUrl?: string;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import MovieCard from './MovieCard';
@@ -15,33 +16,26 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 
 interface MovieListProps {
   initialMovies: Movie[];
 }
 
-// Movies per page
-const MOVIES_PER_PAGE = 20;
-
 // TMDB API base URL for images
 const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
+
+// Special cases for remakes - map movie titles to specific search queries with years
+const SPECIAL_CASES: Record<string, { query: string, year?: number }> = {
+  "The Thomas Crown Affair": { query: "The Thomas Crown Affair", year: 1999 },
+  "Bloodsport": { query: "Bloodsport", year: 1988 },
+};
 
 const MovieList = ({ initialMovies }: MovieListProps) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
-  const [displayedMovies, setDisplayedMovies] = useState<Movie[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
   const [genres, setGenres] = useState<TMDBGenre[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
@@ -72,15 +66,27 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       setIsLoading(true);
       try {
         const movieDetailsPromises = initialMovies.map(async (movie) => {
-          // Special case for "The Thomas Crown Affair" - specify it's the 1999 version
-          const searchQuery = movie.title === "The Thomas Crown Affair" 
-            ? "The Thomas Crown Affair 1999" 
-            : movie.title;
+          // Handle special cases for remakes
+          const specialCase = SPECIAL_CASES[movie.title];
+          
+          // Prepare search query with potential year filter
+          let searchQuery = movie.title;
+          let searchYear = undefined;
+          
+          if (specialCase) {
+            searchQuery = specialCase.query;
+            searchYear = specialCase.year;
+          }
+          
+          // Build search URL with optional year parameter
+          let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
+          
+          if (searchYear) {
+            searchUrl += `&year=${searchYear}`;
+          }
           
           // Search for the movie to get TMDB ID
-          const searchResponse = await fetch(
-            `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`
-          );
+          const searchResponse = await fetch(searchUrl);
           const searchData = await searchResponse.json();
           
           if (searchData.results && searchData.results.length > 0) {
@@ -107,6 +113,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
             return {
               ...movie,
               year,
+              searchYear,
               genre: genreName,
               rottenTomatoesScore,
               imageUrl,
@@ -160,18 +167,6 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     setFilteredMovies(result);
   }, [movies, searchTerm, selectedGenre, sortDirection]);
 
-  // Pagination
-  useEffect(() => {
-    const startIndex = (currentPage - 1) * MOVIES_PER_PAGE;
-    const endIndex = startIndex + MOVIES_PER_PAGE;
-    setDisplayedMovies(filteredMovies.slice(startIndex, endIndex));
-  }, [filteredMovies, currentPage]);
-
-  useEffect(() => {
-    // Reset to first page when filters change
-    setCurrentPage(1);
-  }, [searchTerm, selectedGenre]);
-
   const handleDragEnd = (result: DropResult) => {
     const { destination, source } = result;
 
@@ -188,34 +183,34 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       return;
     }
 
-    // Create a copy of displayed movies
-    const newDisplayedMovies = Array.from(displayedMovies);
+    // Create a copy of filtered movies
+    const newFilteredMovies = Array.from(filteredMovies);
     // Remove the moved item from the array
-    const [removed] = newDisplayedMovies.splice(source.index, 1);
+    const [removed] = newFilteredMovies.splice(source.index, 1);
     // Insert it at the new position
-    newDisplayedMovies.splice(destination.index, 0, removed);
+    newFilteredMovies.splice(destination.index, 0, removed);
 
-    // Update ranks based on new positions for displayed movies
-    const rankedDisplayedMovies = newDisplayedMovies.map((movie, index) => ({
+    // Update ranks based on new positions for all filtered movies
+    const rankedFilteredMovies = newFilteredMovies.map((movie, index) => ({
       ...movie,
-      rank: (currentPage - 1) * MOVIES_PER_PAGE + index + 1,
+      rank: index + 1,
     }));
 
     // Update all movies with the new rankings
     const updatedMovies = movies.map(movie => {
-      const updatedMovie = rankedDisplayedMovies.find(m => m.id === movie.id);
+      const updatedMovie = rankedFilteredMovies.find(m => m.id === movie.id);
       if (updatedMovie) {
         return updatedMovie;
       }
       return movie;
     });
 
-    setDisplayedMovies(rankedDisplayedMovies);
+    setFilteredMovies(rankedFilteredMovies);
     setMovies(updatedMovies);
     
     toast({
       title: "Movie Ranking Updated",
-      description: `"${removed.title}" is now ranked #${destination.index + 1 + ((currentPage - 1) * MOVIES_PER_PAGE)}`,
+      description: `"${removed.title}" is now ranked #${destination.index + 1}`,
       duration: 2000,
     });
   };
@@ -227,8 +222,11 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         ...movie,
         rank: index + 1,
         year: existingMovie?.year,
+        searchYear: existingMovie?.searchYear,
         genre: existingMovie?.genre,
         favorite: existingMovie?.favorite || false,
+        imageUrl: existingMovie?.imageUrl,
+        rottenTomatoesScore: existingMovie?.rottenTomatoesScore,
       };
     });
 
@@ -285,15 +283,27 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     
     // Refresh data for the edited movie
     try {
-      // Special case for "The Thomas Crown Affair" - specify it's the 1999 version
-      const searchQuery = newTitle === "The Thomas Crown Affair" 
-        ? "The Thomas Crown Affair 1999" 
-        : newTitle;
+      // Check if this is a special case for remake
+      const specialCase = SPECIAL_CASES[newTitle];
+      
+      // Prepare search query with potential year filter
+      let searchQuery = newTitle;
+      let searchYear = undefined;
+      
+      if (specialCase) {
+        searchQuery = specialCase.query;
+        searchYear = specialCase.year;
+      }
+      
+      // Build search URL with optional year parameter
+      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
+      
+      if (searchYear) {
+        searchUrl += `&year=${searchYear}`;
+      }
       
       // Search for the movie to get TMDB ID
-      const searchResponse = await fetch(
-        `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`
-      );
+      const searchResponse = await fetch(searchUrl);
       const searchData = await searchResponse.json();
       
       if (searchData.results && searchData.results.length > 0) {
@@ -324,6 +334,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
               ...movie,
               title: newTitle,
               year,
+              searchYear,
               genre: genreName,
               rottenTomatoesScore,
               imageUrl
@@ -356,8 +367,6 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     }
   };
 
-  const totalPages = Math.ceil(filteredMovies.length / MOVIES_PER_PAGE);
-  
   // Get unique genres from movies
   const uniqueGenres = Array.from(
     new Set(movies.filter(movie => movie.genre).map(movie => movie.genre))
@@ -419,105 +428,46 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
           <p className="text-lg">Loading movie data...</p>
         </div>
       ) : filteredMovies.length > 0 ? (
-        <>
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="movie-list">
-              {(provided) => (
-                <div
-                  className="movie-list"
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                >
-                  {displayedMovies.map((movie, index) => (
-                    <Draggable 
-                      key={movie.id.toString()} 
-                      draggableId={movie.id.toString()} 
-                      index={index}
-                    >
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className="animate-fade-in"
-                          style={{ 
-                            animationDelay: `${index * 25}ms`, 
-                            ...provided.draggableProps.style 
-                          }}
-                        >
-                          <MovieCard
-                            movie={movie}
-                            isDragging={snapshot.isDragging}
-                            dragHandleProps={provided.dragHandleProps}
-                            onToggleFavorite={handleToggleFavorite}
-                            onEditMovie={handleEditMovie}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-
-          {totalPages > 1 && (
-            <Pagination className="mt-4">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (currentPage > 1) setCurrentPage(currentPage - 1);
-                    }} 
-                    className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-                
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  // Create a window of pages around the current page
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <PaginationItem key={pageNum}>
-                      <PaginationLink 
-                        href="#" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(pageNum);
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="movie-list">
+            {(provided) => (
+              <div
+                className="movie-list"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+              >
+                {filteredMovies.map((movie, index) => (
+                  <Draggable 
+                    key={movie.id.toString()} 
+                    draggableId={movie.id.toString()} 
+                    index={index}
+                  >
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className="animate-fade-in"
+                        style={{ 
+                          animationDelay: `${index * 25}ms`, 
+                          ...provided.draggableProps.style 
                         }}
-                        isActive={currentPage === pageNum}
                       >
-                        {pageNum}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                })}
-                
-                <PaginationItem>
-                  <PaginationNext 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                    }}
-                    className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
-        </>
+                        <MovieCard
+                          movie={movie}
+                          isDragging={snapshot.isDragging}
+                          dragHandleProps={provided.dragHandleProps}
+                          onToggleFavorite={handleToggleFavorite}
+                          onEditMovie={handleEditMovie}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       ) : (
         <div className="text-center py-8">
           <p className="text-lg">No movies found matching your criteria.</p>

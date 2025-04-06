@@ -25,3 +25,6 @@ export interface TMDBGenre {
   id: number;
   name: string;
 }
+
+// Local storage key for saving movie data
+export const MOVIES_STORAGE_KEY = 'movieRankShuffleData';

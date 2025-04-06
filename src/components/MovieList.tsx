@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import MovieCard from './MovieCard';
 import MovieEditDialog from './MovieEditDialog';
-import { Movie, TMDBMovie, TMDBGenre } from '@/types/movie';
+import { Movie, TMDBMovie, TMDBGenre, MOVIES_STORAGE_KEY } from '@/types/movie';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Search, ArrowDown, ArrowUp } from 'lucide-react';
@@ -43,6 +42,32 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
 
   const { toast } = useToast();
 
+  // Load saved movies from localStorage
+  useEffect(() => {
+    const savedMovies = localStorage.getItem(MOVIES_STORAGE_KEY);
+    if (savedMovies) {
+      try {
+        const parsedMovies = JSON.parse(savedMovies);
+        setMovies(parsedMovies);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error parsing saved movies:', error);
+        // Fall back to initialMovies if there's an error
+        fetchInitialMovieData();
+      }
+    } else {
+      // No saved data, fetch initial data
+      fetchInitialMovieData();
+    }
+  }, []);
+  
+  // Save movies to localStorage whenever they change
+  useEffect(() => {
+    if (!isLoading && movies.length > 0) {
+      localStorage.setItem(MOVIES_STORAGE_KEY, JSON.stringify(movies));
+    }
+  }, [movies, isLoading]);
+
   // Fetch genres from TMDB API
   useEffect(() => {
     const fetchGenres = async () => {
@@ -60,84 +85,78 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     fetchGenres();
   }, []);
 
-  // Fetch movie details from TMDB API
-  useEffect(() => {
-    const fetchMovieDetails = async () => {
-      setIsLoading(true);
-      try {
-        const movieDetailsPromises = initialMovies.map(async (movie) => {
-          // Handle special cases for remakes
-          const specialCase = SPECIAL_CASES[movie.title];
-          
-          // Prepare search query with potential year filter
-          let searchQuery = movie.title;
-          let searchYear = undefined;
-          
-          if (specialCase) {
-            searchQuery = specialCase.query;
-            searchYear = specialCase.year;
-          }
-          
-          // Build search URL with optional year parameter
-          let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
-          
-          if (searchYear) {
-            searchUrl += `&year=${searchYear}`;
-          }
-          
-          // Search for the movie to get TMDB ID
-          const searchResponse = await fetch(searchUrl);
-          const searchData = await searchResponse.json();
-          
-          if (searchData.results && searchData.results.length > 0) {
-            const tmdbMovie = searchData.results[0] as TMDBMovie;
-            
-            // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
-            const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
-            
-            // Get the first genre
-            const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
-              ? genres.find(g => g.id === tmdbMovie.genre_ids[0])?.name
-              : undefined;
-            
-            // Extract year from release date
-            const year = tmdbMovie.release_date 
-              ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
-              : undefined;
-            
-            // Get poster URL
-            const imageUrl = tmdbMovie.poster_path 
-              ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
-              : undefined;
-            
-            return {
-              ...movie,
-              year,
-              searchYear,
-              genre: genreName,
-              rottenTomatoesScore,
-              imageUrl,
-              favorite: false
-            };
-          }
-          
-          return movie;
-        });
+  // Function to fetch initial movie data
+  const fetchInitialMovieData = async () => {
+    setIsLoading(true);
+    try {
+      const movieDetailsPromises = initialMovies.map(async (movie) => {
+        // Handle special cases for remakes
+        const specialCase = SPECIAL_CASES[movie.title];
         
-        const moviesWithDetails = await Promise.all(movieDetailsPromises);
-        setMovies(moviesWithDetails);
-      } catch (error) {
-        console.error('Error fetching movie details:', error);
-        setMovies(initialMovies);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (genres.length > 0) {
-      fetchMovieDetails();
+        // Prepare search query with potential year filter
+        let searchQuery = movie.title;
+        let searchYear = undefined;
+        
+        if (specialCase) {
+          searchQuery = specialCase.query;
+          searchYear = specialCase.year;
+        }
+        
+        // Build search URL with optional year parameter
+        let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
+        
+        if (searchYear) {
+          searchUrl += `&year=${searchYear}`;
+        }
+        
+        // Search for the movie to get TMDB ID
+        const searchResponse = await fetch(searchUrl);
+        const searchData = await searchResponse.json();
+        
+        if (searchData.results && searchData.results.length > 0) {
+          const tmdbMovie = searchData.results[0] as TMDBMovie;
+          
+          // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
+          const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
+          
+          // Get the first genre
+          const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
+            ? genres.find(g => g.id === tmdbMovie.genre_ids[0])?.name
+            : undefined;
+          
+          // Extract year from release date
+          const year = tmdbMovie.release_date 
+            ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
+            : undefined;
+          
+          // Get poster URL
+          const imageUrl = tmdbMovie.poster_path 
+            ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
+            : undefined;
+          
+          return {
+            ...movie,
+            year,
+            searchYear,
+            genre: genreName,
+            rottenTomatoesScore,
+            imageUrl,
+            favorite: false
+          };
+        }
+        
+        return movie;
+      });
+      
+      const moviesWithDetails = await Promise.all(movieDetailsPromises);
+      setMovies(moviesWithDetails);
+    } catch (error) {
+      console.error('Error fetching movie details:', error);
+      setMovies(initialMovies);
+    } finally {
+      setIsLoading(false);
     }
-  }, [initialMovies, genres]);
+  };
 
   // Apply filters and sorting
   useEffect(() => {
@@ -271,7 +290,6 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   };
 
   const handleSaveMovieTitle = async (id: number, newTitle: string) => {
-    // Update the movie title
     const updatedMovies = movies.map(movie => {
       if (movie.id === id) {
         return { ...movie, title: newTitle };
@@ -281,12 +299,9 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     
     setMovies(updatedMovies);
     
-    // Refresh data for the edited movie
     try {
-      // Check if this is a special case for remake
       const specialCase = SPECIAL_CASES[newTitle];
       
-      // Prepare search query with potential year filter
       let searchQuery = newTitle;
       let searchYear = undefined;
       
@@ -295,39 +310,32 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         searchYear = specialCase.year;
       }
       
-      // Build search URL with optional year parameter
       let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
       
       if (searchYear) {
         searchUrl += `&year=${searchYear}`;
       }
       
-      // Search for the movie to get TMDB ID
       const searchResponse = await fetch(searchUrl);
       const searchData = await searchResponse.json();
       
       if (searchData.results && searchData.results.length > 0) {
         const tmdbMovie = searchData.results[0] as TMDBMovie;
         
-        // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
         const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
         
-        // Get the first genre
         const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
           ? genres.find(g => g.id === tmdbMovie.genre_ids[0])?.name
           : undefined;
         
-        // Extract year from release date
         const year = tmdbMovie.release_date 
           ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
           : undefined;
         
-        // Get poster URL
         const imageUrl = tmdbMovie.poster_path 
           ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
           : undefined;
         
-        // Update the movie with the new data
         const refreshedMovies = movies.map(movie => {
           if (movie.id === id) {
             return {
@@ -367,7 +375,17 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     }
   };
 
-  // Get unique genres from movies
+  const resetLocalStorage = () => {
+    localStorage.removeItem(MOVIES_STORAGE_KEY);
+    fetchInitialMovieData();
+    
+    toast({
+      title: "Data Reset",
+      description: "All saved data has been cleared and reset to default.",
+      duration: 2000,
+    });
+  };
+
   const uniqueGenres = Array.from(
     new Set(movies.filter(movie => movie.genre).map(movie => movie.genre))
   ).filter(Boolean) as string[];
@@ -388,6 +406,9 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
             </Button>
             <Button variant="outline" size="sm" onClick={resetRankings}>
               Reset Rankings
+            </Button>
+            <Button variant="destructive" size="sm" onClick={resetLocalStorage}>
+              Reset All Data
             </Button>
           </div>
         </div>
@@ -421,6 +442,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       
       <p className="text-muted-foreground mb-6">
         Drag and drop movies to reorder. Click the star icon to add to favorites. Click the edit icon to modify titles.
+        Your changes are saved automatically.
       </p>
 
       {isLoading ? (

@@ -29,9 +29,9 @@ const SPECIAL_CASES: Record<string, { query: string, year?: number }> = {
   "Bloodsport (1988)": { query: "Bloodsport", year: 1988 },
   "Sherlock Holmes (2009)": { query: "Sherlock Holmes", year: 2009 },
   "Ocean's Eleven": { query: "Ocean's Eleven", year: 2001 },
-  "Parasite": { query: "Parasite", year: 2019 },
-  "Up": { query: "Up", year: 2009 },
-  "Gladiator": { query: "Gladiator", year: 2000 },
+  "Parasite": { query: "Parasite Gisaengchung", year: 2019 },
+  "Up": { query: "Up Pixar", year: 2009 },
+  "Gladiator": { query: "Gladiator Russell Crowe", year: 2000 },
 };
 
 const MovieList = ({ initialMovies }: MovieListProps) => {
@@ -58,11 +58,9 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         setIsLoading(false);
       } catch (error) {
         console.error('Error parsing saved movies:', error);
-        // Fall back to initialMovies if there's an error
         fetchInitialMovieData();
       }
     } else {
-      // No saved data, fetch initial data
       fetchInitialMovieData();
     }
   }, []);
@@ -106,6 +104,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         if (specialCase) {
           searchQuery = specialCase.query;
           searchYear = specialCase.year;
+          console.log(`Using special case for ${movie.title}: query=${searchQuery}, year=${searchYear}`);
         }
         
         // Build search URL with optional year parameter

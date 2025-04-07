@@ -17,13 +17,17 @@ const Index = () => {
     const fetchTopRatedMovies = async () => {
       setIsLoading(true);
       try {
-        // Request a larger number of movies (30) to ensure we get at least 25 valid entries
+        // Request a larger number of movies (50) to ensure we get at least 25 valid entries
         const response = await fetch(
-          'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=1'
+          'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=1&per_page=50'
         );
         const data = await response.json();
         
-        // Take exactly 25 movies
+        if (!data.results || data.results.length < 25) {
+          console.error('Not enough movies received from API:', data.results?.length || 0);
+        }
+        
+        // Take exactly 25 movies, logging to verify the count
         const topMovies = data.results.slice(0, 25).map((movie: any, index: number) => ({
           id: movie.id,
           title: movie.title,
@@ -34,6 +38,7 @@ const Index = () => {
           genre: movie.genre_ids && movie.genre_ids.length > 0 ? movie.genre_ids[0] : undefined
         }));
         
+        console.log(`Processed ${topMovies.length} movies for display`);
         setInitialMovies(topMovies);
       } catch (error) {
         console.error('Error fetching top rated movies:', error);

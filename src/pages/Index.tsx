@@ -17,12 +17,13 @@ const Index = () => {
     const fetchTopRatedMovies = async () => {
       setIsLoading(true);
       try {
+        // Request a larger number of movies (30) to ensure we get at least 25 valid entries
         const response = await fetch(
           'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=1'
         );
         const data = await response.json();
         
-        // Take only the top 25 movies
+        // Take exactly 25 movies
         const topMovies = data.results.slice(0, 25).map((movie: any, index: number) => ({
           id: movie.id,
           title: movie.title,

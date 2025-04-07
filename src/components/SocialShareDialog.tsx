@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Movie } from '@/types/movie';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -231,6 +231,9 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Share Your Movie Rankings</DialogTitle>
+          <DialogDescription>
+            Copy or download your top movie rankings to share with others.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="flex flex-col gap-4">

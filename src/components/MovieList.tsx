@@ -47,7 +47,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     <div className="container mx-auto py-12">
       <div className="flex flex-col gap-6 mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Movie Rankings</h2>
+          <div className="flex-1" />
           <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline" 
@@ -111,7 +111,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       <SocialShareDialog 
         isOpen={isSocialShareDialogOpen} 
         onClose={() => setIsSocialShareDialogOpen(false)} 
-        movies={filteredMovies.slice(0, 25)} 
+        movies={filteredMovies.slice(0, 20)} 
       />
     </div>
   );

@@ -65,9 +65,13 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="bg-card py-8 border-b">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary">
-            The 20 Best Movies of my Life
-          </h1>
+          <div className="flex-1 flex justify-center md:justify-start">
+            <img 
+              src="/lovable-uploads/04a1d30d-c8db-4741-972c-cdda0d91199d.png" 
+              alt="The 20 Best Movies of my Life" 
+              className="h-20 md:h-28 w-auto" 
+            />
+          </div>
           <Button 
             variant="outline" 
             size="icon" 

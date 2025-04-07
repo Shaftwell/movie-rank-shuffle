@@ -9,6 +9,7 @@ export interface Movie {
   imageUrl?: string;
   rottenTomatoesScore?: number;
   isEditing?: boolean;
+  tmdbId?: number; // Add TMDB ID for direct linking
 }
 
 export interface TMDBMovie {

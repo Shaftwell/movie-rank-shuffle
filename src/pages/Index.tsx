@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import MovieList from '@/components/MovieList';
 import { Movie } from '@/types/movie';
@@ -18,7 +19,7 @@ const Index = () => {
       try {
         let allMovies: any[] = [];
         
-        // TMDB API returns 20 movies per page, so we need to fetch at least 2 pages
+        // TMDB API returns 20 movies per page
         const page1Response = await fetch(
           'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=1'
         );
@@ -34,27 +35,16 @@ const Index = () => {
         allMovies = [...page1Data.results];
         console.log(`Page 1 fetched: ${allMovies.length} movies`);
         
-        // We need at least 5 more movies to reach 25, fetch page 2
-        const page2Response = await fetch(
-          'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=2'
-        );
-        const page2Data = await page2Response.json();
-        
-        if (page2Data.results) {
-          // Add all movies from page 2 (we'll slice to 25 total later)
-          allMovies = [...allMovies, ...page2Data.results];
-          console.log(`After page 2: ${allMovies.length} total movies fetched`);
-        }
-        
-        // Take exactly 25 movies
-        const topMovies = allMovies.slice(0, 25).map((movie: any, index: number) => ({
+        // Take exactly 20 movies
+        const topMovies = allMovies.slice(0, 20).map((movie: any, index: number) => ({
           id: movie.id,
           title: movie.title,
           rank: index + 1,
           year: movie.release_date ? parseInt(movie.release_date.split('-')[0], 10) : undefined,
           imageUrl: movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : undefined,
           rottenTomatoesScore: Math.round(movie.vote_average * 10),
-          genre: movie.genre_ids && movie.genre_ids.length > 0 ? movie.genre_ids[0] : undefined
+          genre: movie.genre_ids && movie.genre_ids.length > 0 ? movie.genre_ids[0] : undefined,
+          tmdbId: movie.id
         }));
         
         console.log(`Processed ${topMovies.length} movies for display`);

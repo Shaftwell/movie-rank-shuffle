@@ -23,7 +23,7 @@ const MovieEditDialog = ({
   onSelectTMDBMovie
 }: MovieEditDialogProps) => {
   const [title, setTitle] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('edit');
+  const [activeTab, setActiveTab] = useState<string>('search'); // Default to search tab
 
   // Reset the title when the dialog opens with a new movie
   React.useEffect(() => {
@@ -52,14 +52,21 @@ const MovieEditDialog = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Movie</DialogTitle>
+          <DialogTitle>Find Movie</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="edit" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="edit">Edit Title</TabsTrigger>
             <TabsTrigger value="search">TMDB Search</TabsTrigger>
+            <TabsTrigger value="edit">Edit Title</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="search" className="mt-4">
+            <TMDBSearch 
+              initialQuery={movie.title} 
+              onSelectMovie={handleSelectTMDBMovie} 
+            />
+          </TabsContent>
           
           <TabsContent value="edit" className="space-y-4 mt-4">
             <div className="flex flex-col gap-2">
@@ -73,26 +80,17 @@ const MovieEditDialog = ({
                 placeholder="Enter movie title"
               />
             </div>
-          </TabsContent>
-          
-          <TabsContent value="search" className="mt-4">
-            <TMDBSearch 
-              initialQuery={movie.title} 
-              onSelectMovie={handleSelectTMDBMovie} 
-            />
+            
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={!title.trim()}>
+                Save Changes
+              </Button>
+            </DialogFooter>
           </TabsContent>
         </Tabs>
-
-        {activeTab === 'edit' && (
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!title.trim()}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        )}
       </DialogContent>
     </Dialog>
   );

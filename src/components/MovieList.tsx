@@ -31,6 +31,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     handleSortOptionChange,
     handleEditMovie,
     handleSaveMovieTitle,
+    handleSelectTMDBMovie,
     resetLocalStorage,
     setIsEditDialogOpen,
     setEditingMovie,
@@ -62,8 +63,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       </div>
       
       <p className="text-muted-foreground mb-6">
-        Drag and drop movies to reorder. Click the edit icon to modify titles.
-        Your changes are saved automatically.
+        Drag and drop movies to reorder. Click the edit icon to modify titles or search TMDB for correct movie information.
       </p>
 
       {isLoading ? (
@@ -90,6 +90,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
           setEditingMovie(null);
         }}
         onSave={handleSaveMovieTitle}
+        onSelectTMDBMovie={handleSelectTMDBMovie}
       />
     </div>
   );

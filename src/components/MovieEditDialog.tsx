@@ -1,74 +1,98 @@
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Movie } from '@/types/movie';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Movie, TMDBMovie } from '@/types/movie';
+import TMDBSearch from './TMDBSearch';
 
 interface MovieEditDialogProps {
   movie: Movie | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (id: number, newTitle: string) => Promise<void>;
+  onSave: (id: number, newTitle: string) => void;
+  onSelectTMDBMovie?: (id: number, tmdbMovie: TMDBMovie) => void;
 }
 
-const MovieEditDialog = ({ movie, isOpen, onClose, onSave }: MovieEditDialogProps) => {
+const MovieEditDialog = ({
+  movie,
+  isOpen,
+  onClose,
+  onSave,
+  onSelectTMDBMovie
+}: MovieEditDialogProps) => {
   const [title, setTitle] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('edit');
 
-  useEffect(() => {
+  // Reset the title when the dialog opens with a new movie
+  React.useEffect(() => {
     if (movie) {
       setTitle(movie.title);
     }
   }, [movie]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = () => {
     if (movie && title.trim()) {
-      setIsSaving(true);
-      try {
-        await onSave(movie.id, title.trim());
-        onClose();
-      } catch (error) {
-        console.error('Error saving movie title:', error);
-      } finally {
-        setIsSaving(false);
-      }
+      onSave(movie.id, title.trim());
+      onClose();
     }
   };
 
+  const handleSelectTMDBMovie = (tmdbMovie: TMDBMovie) => {
+    if (movie && onSelectTMDBMovie) {
+      onSelectTMDBMovie(movie.id, tmdbMovie);
+      onClose();
+    }
+  };
+
+  if (!movie) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Movie Title</DialogTitle>
-          <DialogDescription>
-            Update the movie title and we'll refresh its data.
-          </DialogDescription>
+          <DialogTitle>Edit Movie</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Title</Label>
+        
+        <Tabs defaultValue="edit" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="edit">Edit Title</TabsTrigger>
+            <TabsTrigger value="search">TMDB Search</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="edit" className="space-y-4 mt-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="title" className="text-sm font-medium">
+                Movie Title
+              </label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter movie title"
-                autoFocus
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+          </TabsContent>
+          
+          <TabsContent value="search" className="mt-4">
+            <TMDBSearch 
+              initialQuery={movie.title} 
+              onSelectMovie={handleSelectTMDBMovie} 
+            />
+          </TabsContent>
+        </Tabs>
+
+        {activeTab === 'edit' && (
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving || !title.trim()}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
+            <Button onClick={handleSave} disabled={!title.trim()}>
+              Save Changes
             </Button>
           </DialogFooter>
-        </form>
+        )}
       </DialogContent>
     </Dialog>
   );

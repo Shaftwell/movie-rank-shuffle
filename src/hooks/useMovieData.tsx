@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { Movie, TMDBMovie, TMDBGenre, MOVIES_STORAGE_KEY, SortOption } from '@/types/movie';
 import { useToast } from '@/hooks/use-toast';
+import { DropResult } from 'react-beautiful-dnd';
 
 // TMDB API base URL for images
 const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
@@ -12,8 +12,8 @@ const SPECIAL_CASES: Record<string, { query: string, year?: number }> = {
   "Bloodsport (1988)": { query: "Bloodsport", year: 1988 },
   "Sherlock Holmes (2009)": { query: "Sherlock Holmes", year: 2009 },
   "Ocean's Eleven": { query: "Ocean's Eleven", year: 2001 },
-  "Parasite": { query: "Parasite Gisaengchung", year: 2019 },
-  "Up": { query: "Up Pixar", year: 2009 },
+  "Parasite (기생충)": { query: "Parasite Gisaengchung", year: 2019 },
+  "Up (2009)": { query: "Up Pixar", year: 2009 },
   "Gladiator": { query: "Gladiator Russell Crowe", year: 2000 },
 };
 
@@ -393,6 +393,55 @@ export function useMovieData(initialMovies: Movie[]) {
     new Set(movies.filter(movie => movie.genre).map(movie => movie.genre))
   ).filter(Boolean) as string[];
 
+  const handleSelectTMDBMovie = (id: number, tmdbMovie: TMDBMovie) => {
+    try {
+      // Process the selected TMDB movie data
+      const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
+      
+      const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
+        ? genres.find(g => g.id === tmdbMovie.genre_ids[0])?.name
+        : undefined;
+      
+      const year = tmdbMovie.release_date 
+        ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
+        : undefined;
+      
+      const imageUrl = tmdbMovie.poster_path 
+        ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
+        : undefined;
+      
+      // Update the movie with the new data from TMDB
+      const updatedMovies = movies.map(movie => {
+        if (movie.id === id) {
+          return {
+            ...movie,
+            title: tmdbMovie.title,
+            year,
+            genre: genreName,
+            rottenTomatoesScore,
+            imageUrl
+          };
+        }
+        return movie;
+      });
+      
+      setMovies(updatedMovies);
+      
+      toast({
+        title: "Movie Updated",
+        description: `"${tmdbMovie.title}" has been updated with TMDB data.`,
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Error updating movie with TMDB data:', error);
+      toast({
+        title: "Update Error",
+        description: "Failed to update movie with TMDB data.",
+        duration: 2000,
+      });
+    }
+  };
+
   return {
     movies,
     filteredMovies,
@@ -412,6 +461,7 @@ export function useMovieData(initialMovies: Movie[]) {
     handleSortOptionChange,
     handleEditMovie,
     handleSaveMovieTitle,
+    handleSelectTMDBMovie,
     resetLocalStorage,
     setIsEditDialogOpen,
     setEditingMovie,

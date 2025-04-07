@@ -23,7 +23,8 @@ const MovieEditDialog = ({
   onSelectTMDBMovie
 }: MovieEditDialogProps) => {
   const [title, setTitle] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('search'); // Default to search tab
+  // Default to "search" tab instead of "edit"
+  const [activeTab, setActiveTab] = useState<string>('search');
 
   // Reset the title when the dialog opens with a new movie
   React.useEffect(() => {

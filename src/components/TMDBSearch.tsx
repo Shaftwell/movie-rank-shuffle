@@ -27,7 +27,7 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
     setError('');
     
     try {
-      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
+      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false&sort_by=vote_average.desc`;
       
       if (year) {
         searchUrl += `&year=${year}`;

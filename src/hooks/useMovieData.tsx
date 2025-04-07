@@ -7,13 +7,13 @@ import { DropResult } from 'react-beautiful-dnd';
 const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
 
 // Special cases for remakes - map movie titles to specific search queries with years
-const SPECIAL_CASES: Record<string, { query: string, year?: number }> = {
+const SPECIAL_CASES: Record<string, { query: string, year?: number, tmdbId?: number }> = {
   "The Thomas Crown Affair (1999)": { query: "The Thomas Crown Affair", year: 1999 },
   "Bloodsport (1988)": { query: "Bloodsport", year: 1988 },
   "Sherlock Holmes (2009)": { query: "Sherlock Holmes", year: 2009 },
   "Ocean's Eleven": { query: "Ocean's Eleven", year: 2001 },
-  "Parasite": { query: "Parasite Gisaengchung", year: 2019 },
-  "Parasite (기생충)": { query: "Parasite Gisaengchung", year: 2019 },
+  "Parasite": { query: "Parasite Gisaengchung", year: 2019, tmdbId: 496243 },
+  "Parasite (기생충)": { query: "Parasite Gisaengchung", year: 2019, tmdbId: 496243 },
   "Up": { query: "Up Pixar", year: 2009 },
   "Up (2009)": { query: "Up Pixar", year: 2009 },
   "Gladiator": { query: "Gladiator Russell Crowe", year: 2000 },
@@ -89,6 +89,51 @@ export function useMovieData(initialMovies: Movie[]) {
       const movieDetailsPromises = top20Movies.map(async (movie) => {
         // Handle special cases for remakes
         const specialCase = SPECIAL_CASES[movie.title];
+        
+        if (specialCase && specialCase.tmdbId) {
+          // If we have a direct TMDB ID, fetch the movie details directly
+          console.log(`Using direct TMDB ID ${specialCase.tmdbId} for ${movie.title}`);
+          
+          try {
+            const detailResponse = await fetch(
+              `https://api.themoviedb.org/3/movie/${specialCase.tmdbId}?api_key=2dca580c2a14b55200e784d157207b4d`
+            );
+            const tmdbMovie = await detailResponse.json();
+            
+            if (tmdbMovie && tmdbMovie.id) {
+              // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
+              const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
+              
+              // Get the first genre
+              const genreName = tmdbMovie.genres && tmdbMovie.genres.length > 0
+                ? tmdbMovie.genres[0].name
+                : undefined;
+              
+              // Extract year from release date
+              const year = tmdbMovie.release_date 
+                ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
+                : undefined;
+              
+              // Get poster URL
+              const imageUrl = tmdbMovie.poster_path 
+                ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
+                : undefined;
+              
+              return {
+                ...movie,
+                year,
+                searchYear: specialCase.year,
+                genre: genreName,
+                rottenTomatoesScore,
+                imageUrl,
+                favorite: false,
+                tmdbId: tmdbMovie.id
+              };
+            }
+          } catch (detailError) {
+            console.error(`Error fetching details for ${movie.title} with ID ${specialCase.tmdbId}:`, detailError);
+          }
+        }
         
         // Prepare search query with potential year filter
         let searchQuery = movie.title;
@@ -334,6 +379,61 @@ export function useMovieData(initialMovies: Movie[]) {
     try {
       const specialCase = SPECIAL_CASES[newTitle];
       
+      // If we have a specific TMDB ID for this title, fetch it directly
+      if (specialCase && specialCase.tmdbId) {
+        const detailResponse = await fetch(
+          `https://api.themoviedb.org/3/movie/${specialCase.tmdbId}?api_key=2dca580c2a14b55200e784d157207b4d`
+        );
+        const tmdbMovie = await detailResponse.json();
+        
+        if (tmdbMovie && tmdbMovie.id) {
+          // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
+          const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
+          
+          // Get the first genre
+          const genreName = tmdbMovie.genres && tmdbMovie.genres.length > 0
+            ? tmdbMovie.genres[0].name
+            : undefined;
+          
+          // Extract year from release date
+          const year = tmdbMovie.release_date 
+            ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
+            : undefined;
+          
+          // Get poster URL
+          const imageUrl = tmdbMovie.poster_path 
+            ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
+            : undefined;
+          
+          const refreshedMovies = movies.map(movie => {
+            if (movie.id === id) {
+              return {
+                ...movie,
+                title: newTitle,
+                year,
+                searchYear: specialCase.year,
+                genre: genreName,
+                rottenTomatoesScore,
+                imageUrl,
+                tmdbId: tmdbMovie.id
+              };
+            }
+            return movie;
+          });
+          
+          setMovies(refreshedMovies);
+          
+          toast({
+            title: "Movie Updated",
+            description: `"${newTitle}" has been updated with fresh data.`,
+            duration: 2000,
+          });
+          
+          return;
+        }
+      }
+      
+      // Standard search query approach if no direct TMDB ID
       let searchQuery = newTitle;
       let searchYear = undefined;
       

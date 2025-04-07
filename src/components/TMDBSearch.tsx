@@ -108,7 +108,7 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
                   {movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown year'}
                 </p>
                 <p className="text-xs mt-1 line-clamp-2">
-                  Rating: {movie.vote_average.toFixed(1)}/10
+                  Rating: {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}/10
                 </p>
               </div>
             </div>

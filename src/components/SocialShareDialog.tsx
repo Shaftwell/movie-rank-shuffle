@@ -116,8 +116,8 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
                   >
                     <X className="h-5 w-5" />
                     <div>
-                      <p className="font-medium">X (Twitter)</p>
-                      <p className="text-xs text-muted-foreground">Share to X</p>
+                      <p className="font-medium">X</p>
+                      <p className="text-xs text-muted-foreground">Share to X.com</p>
                     </div>
                   </Button>
                   

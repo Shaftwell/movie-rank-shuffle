@@ -17,18 +17,38 @@ const Index = () => {
     const fetchTopRatedMovies = async () => {
       setIsLoading(true);
       try {
-        // Request a larger number of movies (50) to ensure we get at least 25 valid entries
-        const response = await fetch(
-          'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=1&per_page=50'
-        );
-        const data = await response.json();
+        let allMovies: any[] = [];
         
-        if (!data.results || data.results.length < 25) {
-          console.error('Not enough movies received from API:', data.results?.length || 0);
+        // Fetch page 1
+        const page1Response = await fetch(
+          'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=1'
+        );
+        const page1Data = await page1Response.json();
+        
+        if (!page1Data.results) {
+          console.error('No results returned from API');
+          setIsLoading(false);
+          return;
         }
         
-        // Take exactly 25 movies, logging to verify the count
-        const topMovies = data.results.slice(0, 25).map((movie: any, index: number) => ({
+        allMovies = [...page1Data.results];
+        
+        // If we don't have enough movies yet, fetch page 2
+        if (allMovies.length < 25) {
+          const page2Response = await fetch(
+            'https://api.themoviedb.org/3/movie/top_rated?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US&page=2'
+          );
+          const page2Data = await page2Response.json();
+          
+          if (page2Data.results) {
+            allMovies = [...allMovies, ...page2Data.results];
+          }
+        }
+        
+        console.log(`Total movies fetched: ${allMovies.length}`);
+        
+        // Take exactly 25 movies
+        const topMovies = allMovies.slice(0, 25).map((movie: any, index: number) => ({
           id: movie.id,
           title: movie.title,
           rank: index + 1,

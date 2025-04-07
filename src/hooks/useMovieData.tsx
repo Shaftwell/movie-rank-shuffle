@@ -28,6 +28,7 @@ export function useMovieData(initialMovies: Movie[]) {
   const [isLoading, setIsLoading] = useState(true);
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSocialShareDialogOpen, setIsSocialShareDialogOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -37,7 +38,9 @@ export function useMovieData(initialMovies: Movie[]) {
     if (savedMovies) {
       try {
         const parsedMovies = JSON.parse(savedMovies);
-        setMovies(parsedMovies);
+        // Ensure we only keep the top 25 movies
+        const topMovies = parsedMovies.slice(0, 25);
+        setMovies(topMovies);
         setIsLoading(false);
       } catch (error) {
         console.error('Error parsing saved movies:', error);
@@ -51,7 +54,9 @@ export function useMovieData(initialMovies: Movie[]) {
   // Save movies to localStorage whenever they change
   useEffect(() => {
     if (!isLoading && movies.length > 0) {
-      localStorage.setItem(MOVIES_STORAGE_KEY, JSON.stringify(movies));
+      // Only save the top 25 movies
+      const topMovies = movies.slice(0, 25);
+      localStorage.setItem(MOVIES_STORAGE_KEY, JSON.stringify(topMovies));
     }
   }, [movies, isLoading]);
 
@@ -76,7 +81,10 @@ export function useMovieData(initialMovies: Movie[]) {
   const fetchInitialMovieData = async () => {
     setIsLoading(true);
     try {
-      const movieDetailsPromises = initialMovies.map(async (movie) => {
+      // Ensure we only process the top 25 movies
+      const top25Movies = initialMovies.slice(0, 25);
+      
+      const movieDetailsPromises = top25Movies.map(async (movie) => {
         // Handle special cases for remakes
         const specialCase = SPECIAL_CASES[movie.title];
         
@@ -140,7 +148,7 @@ export function useMovieData(initialMovies: Movie[]) {
       setMovies(moviesWithDetails);
     } catch (error) {
       console.error('Error fetching movie details:', error);
-      setMovies(initialMovies);
+      setMovies(initialMovies.slice(0, 25));
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +257,7 @@ export function useMovieData(initialMovies: Movie[]) {
   };
 
   const resetRankings = () => {
-    const sortedMovies = [...initialMovies].map((movie, index) => {
+    const sortedMovies = [...initialMovies].slice(0, 25).map((movie, index) => {
       const existingMovie = movies.find(m => m.id === movie.id);
       return {
         ...movie,
@@ -373,26 +381,6 @@ export function useMovieData(initialMovies: Movie[]) {
     }
   };
 
-  const resetLocalStorage = () => {
-    localStorage.removeItem(MOVIES_STORAGE_KEY);
-    fetchInitialMovieData();
-    
-    toast({
-      title: "Data Reset",
-      description: "All saved data has been cleared and reset to default.",
-      duration: 2000,
-    });
-  };
-
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedGenre('all');
-  };
-
-  const uniqueGenres = Array.from(
-    new Set(movies.filter(movie => movie.genre).map(movie => movie.genre))
-  ).filter(Boolean) as string[];
-
   const handleSelectTMDBMovie = (id: number, tmdbMovie: TMDBMovie) => {
     try {
       // Process the selected TMDB movie data
@@ -442,6 +430,26 @@ export function useMovieData(initialMovies: Movie[]) {
     }
   };
 
+  const resetLocalStorage = () => {
+    localStorage.removeItem(MOVIES_STORAGE_KEY);
+    fetchInitialMovieData();
+    
+    toast({
+      title: "Data Reset",
+      description: "All saved data has been cleared and reset to default.",
+      duration: 2000,
+    });
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedGenre('all');
+  };
+
+  const uniqueGenres = Array.from(
+    new Set(movies.filter(movie => movie.genre).map(movie => movie.genre))
+  ).filter(Boolean) as string[];
+
   return {
     movies,
     filteredMovies,
@@ -455,6 +463,8 @@ export function useMovieData(initialMovies: Movie[]) {
     uniqueGenres,
     editingMovie,
     isEditDialogOpen,
+    isSocialShareDialogOpen,
+    setIsSocialShareDialogOpen,
     handleDragEnd,
     resetRankings,
     toggleSortDirection,

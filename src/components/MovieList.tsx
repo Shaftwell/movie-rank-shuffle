@@ -4,9 +4,12 @@ import MovieFilters from './MovieFilters';
 import MovieSortControls from './MovieSortControls';
 import DraggableMovieList from './DraggableMovieList';
 import MovieEditDialog from './MovieEditDialog';
+import SocialShareDialog from './SocialShareDialog';
 import { useMovieData } from '@/hooks/useMovieData';
 import { Movie } from '@/types/movie';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Share2 } from 'lucide-react';
 
 interface MovieListProps {
   initialMovies: Movie[];
@@ -25,6 +28,8 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     uniqueGenres,
     editingMovie,
     isEditDialogOpen,
+    isSocialShareDialogOpen,
+    setIsSocialShareDialogOpen,
     handleDragEnd,
     resetRankings,
     toggleSortDirection,
@@ -43,14 +48,24 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
       <div className="flex flex-col gap-6 mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Movie Rankings</h2>
-          <MovieSortControls
-            sortOption={sortOption}
-            sortDirection={sortDirection}
-            onSortOptionChange={handleSortOptionChange}
-            toggleSortDirection={toggleSortDirection}
-            resetRankings={resetRankings}
-            resetLocalStorage={resetLocalStorage}
-          />
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2" 
+              onClick={() => setIsSocialShareDialogOpen(true)}
+            >
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
+            <MovieSortControls
+              sortOption={sortOption}
+              sortDirection={sortDirection}
+              onSortOptionChange={handleSortOptionChange}
+              toggleSortDirection={toggleSortDirection}
+              resetRankings={resetRankings}
+              resetLocalStorage={resetLocalStorage}
+            />
+          </div>
         </div>
         
         <MovieFilters
@@ -91,6 +106,12 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         }}
         onSave={handleSaveMovieTitle}
         onSelectTMDBMovie={handleSelectTMDBMovie}
+      />
+
+      <SocialShareDialog 
+        isOpen={isSocialShareDialogOpen} 
+        onClose={() => setIsSocialShareDialogOpen(false)} 
+        movies={filteredMovies.slice(0, 25)} 
       />
     </div>
   );

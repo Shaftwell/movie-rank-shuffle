@@ -26,7 +26,7 @@ export interface TMDBGenre {
 }
 
 // Local storage key for saving movie data
-export const MOVIES_STORAGE_KEY = 'movieRankShuffleData';
+export const MOVIES_STORAGE_KEY = 'top25MovieRankData';
 
 // Sorting options
 export type SortOption = 'rank' | 'title-asc' | 'title-desc' | 'year' | 'rating';

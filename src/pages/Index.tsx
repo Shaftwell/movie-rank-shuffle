@@ -64,24 +64,26 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card py-8 border-b">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex-1 flex justify-center md:justify-start">
+        <div className="container mx-auto flex flex-col items-center justify-center">
+          <div className="flex justify-center w-full mb-4">
             <img 
               src="/lovable-uploads/04a1d30d-c8db-4741-972c-cdda0d91199d.png" 
               alt="The 20 Best Movies of my Life" 
-              className="h-20 md:h-28 w-auto" 
+              className="h-auto w-full max-w-md md:max-w-lg lg:max-w-xl" 
             />
           </div>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            aria-label="Toggle theme"
-            className="rounded-full shadow-sm"
-          >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </Button>
+          <div className="absolute top-8 right-8">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label="Toggle theme"
+              className="rounded-full shadow-sm"
+            >
+              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </Button>
+          </div>
         </div>
       </header>
       

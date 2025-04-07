@@ -1,13 +1,18 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Movie } from '@/types/movie';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Movie } from '@/types/movie';
-import { Copy, Check, Facebook, Linkedin, X } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Clipboard, Facebook, Linkedin, X, Check, Share2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface SocialShareDialogProps {
   isOpen: boolean;
@@ -17,32 +22,31 @@ interface SocialShareDialogProps {
 
 const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) => {
   const [copied, setCopied] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [activeTab, setActiveTab] = useState('preview');
   const { toast } = useToast();
   
-  const topMovies = movies.slice(0, 25);
-  const shareUrl = window.location.href;
-  
-  const generateShareText = () => {
-    let text = "Here are my top 25 movies:\n\n";
+  const generateMovieList = () => {
+    let list = '🎬 My Top 25 Movies of All Time 🎬\n\n';
     
-    topMovies.forEach((movie, index) => {
-      text += `${index + 1}. ${movie.title}${movie.year ? ` (${movie.year})` : ''}\n`;
+    // Make sure we only share a maximum of 25 movies
+    const moviesToShare = movies.slice(0, 25);
+    
+    moviesToShare.forEach((movie) => {
+      list += `${movie.rank}. ${movie.title}${movie.year ? ` (${movie.year})` : ''}\n`;
     });
     
-    text += `\nCheck out and create your own ranking at ${shareUrl}`;
-    
-    return text;
+    list += '\nRanked with passion and personal preference! What would be on your list? 🍿';
+    return list;
   };
   
-  const shareText = generateShareText();
-  
   const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(shareText);
+    navigator.clipboard.writeText(generateMovieList());
     setCopied(true);
+    
     toast({
       title: "Copied to clipboard",
-      description: "Your movie list has been copied to clipboard",
+      description: "Your movie list has been copied to clipboard!",
+      duration: 2000,
     });
     
     setTimeout(() => {
@@ -50,182 +54,149 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
     }, 2000);
   };
   
-  const handleShareX = () => {
-    const xShareText = `My top 25 movies ranking:\n\n${topMovies.slice(0, 5).map((m, i) => `${i + 1}. ${m.title}`).join('\n')}\n\n...and more!`;
-    
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(xShareText)}&url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank');
+  const handleShareToX = () => {
+    const text = encodeURIComponent(generateMovieList().substring(0, 280));
+    window.open(`https://x.com/intent/tweet?text=${text}`, '_blank');
   };
   
-  const handleShareFacebook = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank');
+  const handleShareToFacebook = () => {
+    const text = encodeURIComponent('Check out my top 25 movies of all time!');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${text}`, '_blank');
   };
   
-  const handleShareLinkedIn = () => {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank');
+  const handleShareToLinkedIn = () => {
+    const text = encodeURIComponent('My Top 25 Movies of All Time');
+    window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(window.location.href)}&title=${text}`, '_blank');
   };
 
-  const handleShowPreview = () => {
-    setShowPreview(true);
-  };
-  
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Share Your Cinematic Journey</DialogTitle>
-            <DialogDescription>
-              Share your curated collection of 25 extraordinary films with the world
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md md:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">Share Your Top Movies</DialogTitle>
+          <DialogDescription>
+            Share your personalized movie rankings across social media or copy the list to share anywhere.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Tabs defaultValue="preview" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsTrigger value="share">Share</TabsTrigger>
+          </TabsList>
           
-          <Tabs defaultValue="social" className="mt-2">
-            <TabsList className="grid grid-cols-2 mb-6 w-full">
-              <TabsTrigger value="social" className="text-sm">Social Media</TabsTrigger>
-              <TabsTrigger value="text" className="text-sm">As Text</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="text" className="space-y-4">
-              <Textarea 
-                value={shareText} 
-                readOnly 
-                className="h-[200px] font-mono text-sm"
-              />
-              <div className="flex justify-end">
-                <Button onClick={handleCopyToClipboard} className="flex items-center gap-2">
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied ? "Copied" : "Copy"}
+          <TabsContent value="preview" className="focus:outline-none">
+            <div className="bg-card border rounded-lg p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary h-8 w-8 rounded-full flex items-center justify-center">
+                    <Share2 className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">My Top 25 Movies</h3>
+                    <p className="text-xs text-muted-foreground">Ranked with passion and personal preference</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={handleCopyToClipboard}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Save
                 </Button>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="social" className="space-y-5">
-              <div className="flex flex-col gap-4">
-                <p className="text-sm text-muted-foreground">
-                  Share your cinematic taste with friends and followers
-                </p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-                  <Button 
-                    onClick={handleShareX} 
-                    variant="outline" 
-                    className="flex items-center justify-center gap-2 py-6 hover:bg-primary/10 hover:border-primary transition-all"
-                  >
-                    <X className="h-5 w-5" />
-                    <div>
-                      <p className="font-medium">X</p>
-                      <p className="text-xs text-muted-foreground">Share to X.com</p>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    onClick={handleShareFacebook} 
-                    variant="outline" 
-                    className="flex items-center justify-center gap-2 py-6 hover:bg-blue-50 hover:border-blue-400 dark:hover:bg-blue-950/30 dark:hover:border-blue-500 transition-all"
-                  >
-                    <Facebook className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <div>
-                      <p className="font-medium">Facebook</p>
-                      <p className="text-xs text-muted-foreground">Share to Facebook</p>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    onClick={handleShareLinkedIn} 
-                    variant="outline" 
-                    className="flex items-center justify-center gap-2 py-6 hover:bg-blue-50 hover:border-blue-600 dark:hover:bg-blue-950/30 dark:hover:border-blue-600 transition-all"
-                  >
-                    <Linkedin className="h-5 w-5 text-blue-700 dark:text-blue-500" />
-                    <div>
-                      <p className="font-medium">LinkedIn</p>
-                      <p className="text-xs text-muted-foreground">Share to LinkedIn</p>
-                    </div>
-                  </Button>
-                </div>
-                
-                <div className="p-4 rounded-lg border border-primary/10 bg-primary/5 mt-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm font-medium">Preview</p>
-                    <Button variant="ghost" size="sm" onClick={handleShowPreview}>
-                      See full preview
-                    </Button>
-                  </div>
-                  
-                  <div className="mt-3 rounded-md overflow-hidden border">
-                    <div className="bg-card p-3">
-                      <h3 className="font-medium text-sm">My Top 25 Movies Ranking</h3>
-                      <p className="text-xs text-muted-foreground mt-1">Personal collection of the most impactful films</p>
-                    </div>
-                    
-                    <div className="p-3">
-                      <ul className="space-y-1 text-sm">
-                        {topMovies.slice(0, 3).map((movie, idx) => (
-                          <li key={idx} className="flex items-center gap-2">
-                            <span className="bg-primary/10 text-primary w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium">
-                              {idx + 1}
-                            </span>
-                            <span>{movie.title}{movie.year ? ` (${movie.year})` : ''}</span>
-                          </li>
-                        ))}
-                        <li className="text-muted-foreground text-xs flex items-center gap-2 pl-7">
-                          and {topMovies.length - 3} more...
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={showPreview} onOpenChange={setShowPreview}>
-        <AlertDialogContent className="sm:max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Social Share Preview</AlertDialogTitle>
-            <AlertDialogDescription>
-              This is how your share will look on social media
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          
-          <div className="border rounded-lg overflow-hidden my-4">
-            <div className="bg-card p-4">
-              <h3 className="font-bold text-lg">My Top 25 Movies Ranking</h3>
-              <p className="text-sm text-muted-foreground mt-1">Personal collection of the most impactful films</p>
-            </div>
-            
-            <div className="p-4">
-              <ul className="space-y-2">
-                {topMovies.slice(0, 10).map((movie, idx) => (
-                  <li key={idx} className="flex items-center gap-3">
-                    <span className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center font-medium">
-                      {idx + 1}
-                    </span>
-                    <span>{movie.title}{movie.year ? ` (${movie.year})` : ''}</span>
-                  </li>
-                ))}
-                <li className="text-muted-foreground flex items-center gap-3 ml-9">
-                  and {topMovies.length - 10} more...
-                </li>
-              </ul>
               
-              <div className="mt-6 pt-4 border-t">
-                <p className="text-xs text-muted-foreground">Shared via The 25 Best Movies of my Life</p>
-                <p className="text-sm text-primary">{window.location.origin}</p>
+              <ScrollArea className="h-[300px] rounded border bg-background p-4">
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  {movies.slice(0, 25).map((movie) => (
+                    <li key={movie.id} className="text-sm">
+                      <span className="font-medium">{movie.title}</span>
+                      {movie.year && <span className="text-muted-foreground"> ({movie.year})</span>}
+                      {movie.rottenTomatoesScore && (
+                        <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
+                          movie.rottenTomatoesScore >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                          movie.rottenTomatoesScore >= 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
+                          {movie.rottenTomatoesScore}%
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </ScrollArea>
+              
+              <div className="mt-4 text-xs text-center text-muted-foreground italic">
+                Share this list with friends and compare favorite movies!
               </div>
             </div>
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogAction>Close Preview</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+          </TabsContent>
+          
+          <TabsContent value="share" className="focus:outline-none">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 h-16 justify-start px-4 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 transition-colors border-blue-100 dark:border-blue-900"
+                  onClick={handleShareToX}
+                >
+                  <X className="h-5 w-5" />
+                  <div>
+                    <p className="font-medium">X</p>
+                    <p className="text-xs text-muted-foreground">Share to X.com</p>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 h-16 justify-start px-4 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-950 transition-colors border-blue-100 dark:border-blue-900"
+                  onClick={handleShareToFacebook}
+                >
+                  <Facebook className="h-5 w-5" />
+                  <div>
+                    <p className="font-medium">Facebook</p>
+                    <p className="text-xs text-muted-foreground">Share to Facebook</p>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 h-16 justify-start px-4 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-950 transition-colors border-blue-100 dark:border-blue-900"
+                  onClick={handleShareToLinkedIn}
+                >
+                  <Linkedin className="h-5 w-5" />
+                  <div>
+                    <p className="font-medium">LinkedIn</p>
+                    <p className="text-xs text-muted-foreground">Share to LinkedIn</p>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 h-16 justify-start px-4 hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-950 transition-colors border-green-100 dark:border-green-900"
+                  onClick={handleCopyToClipboard}
+                >
+                  {copied ? <Check className="h-5 w-5" /> : <Clipboard className="h-5 w-5" />}
+                  <div>
+                    <p className="font-medium">{copied ? 'Copied!' : 'Copy Text'}</p>
+                    <p className="text-xs text-muted-foreground">Copy to clipboard</p>
+                  </div>
+                </Button>
+              </div>
+              
+              <div className="mt-6 p-4 bg-muted rounded-md">
+                <p className="text-sm font-medium mb-2">Preview:</p>
+                <ScrollArea className="h-[150px]">
+                  <p className="text-xs whitespace-pre-wrap text-muted-foreground">{generateMovieList()}</p>
+                </ScrollArea>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 };
 

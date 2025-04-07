@@ -121,16 +121,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card py-6 border-b">
+      <header className="bg-card py-8 border-b">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-center text-primary">
-            Movie Rank Shuffle
+          <h1 className="text-3xl md:text-4xl font-bold text-primary">
+            The 100 Best Movies of my Life
           </h1>
           <Button 
             variant="outline" 
             size="icon" 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             aria-label="Toggle theme"
+            className="rounded-full shadow-sm"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -144,7 +145,7 @@ const Index = () => {
       
       <footer className="border-t py-6 mt-12">
         <div className="container mx-auto text-center text-muted-foreground">
-          <p>My Top 100 Movies Ranking Application</p>
+          <p>Personal Movie Rankings Collection</p>
         </div>
       </footer>
     </div>

@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 345 82% 40%;
+    --primary: 220 60% 40%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -33,7 +33,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --radius: 0.5rem;
+    --radius: 0.6rem;
   }
 
   .dark {
@@ -46,7 +46,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 345 82% 40%;
+    --primary: 217 60% 50%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -74,17 +74,24 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "ss02", "cv01";
   }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Movie Ranker custom styles */
 .movie-card {
-  @apply relative bg-card shadow-md rounded-md overflow-hidden border transition-all;
+  @apply relative bg-card shadow-md rounded-lg overflow-hidden border transition-all;
   min-height: 80px;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .movie-card:hover {
-  @apply shadow-lg border-primary/50 scale-[1.01];
+  @apply shadow-lg border-primary/30 scale-[1.01];
 }
 
 .movie-rank-container {
@@ -92,7 +99,7 @@
 }
 
 .movie-rank {
-  @apply bg-primary text-primary-foreground rounded-md w-10 h-10 flex items-center justify-center font-bold text-lg shadow-md;
+  @apply bg-primary text-primary-foreground rounded-lg w-12 h-12 flex items-center justify-center font-bold text-lg shadow-md;
   font-variant-numeric: tabular-nums;
 }
 
@@ -101,7 +108,7 @@
 }
 
 .movie-meta {
-  @apply mt-1;
+  @apply mt-2;
 }
 
 .movie-actions {
@@ -114,11 +121,11 @@
 
 /* Drag and drop styles */
 .movie-dragging {
-  @apply opacity-60 border-dashed border-2 border-primary bg-primary/5;
+  @apply opacity-70 border-dashed border-2 border-primary bg-primary/5;
 }
 
 .movie-list {
-  @apply space-y-3 p-4 md:p-6;
+  @apply space-y-4 p-4 md:p-6;
 }
 
 /* Animation utilities */
@@ -133,4 +140,15 @@
 
 .animate-pulse-slow {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Modern glass effect */
+.glass-card {
+  @apply backdrop-blur-sm bg-white/5 border border-white/10;
+}
+
+/* Fade in animation for list items */
+.fade-in-item {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
 }

@@ -39,10 +39,10 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
   } = useMovieData(initialMovies);
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex flex-col gap-4 mb-6">
+    <div className="container mx-auto py-12">
+      <div className="flex flex-col gap-6 mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-2xl font-bold">My Top 100 Movies</h2>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Movie Rankings</h2>
           <MovieSortControls
             sortOption={sortOption}
             sortDirection={sortDirection}
@@ -62,7 +62,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
         />
       </div>
       
-      <p className="text-muted-foreground mb-6">
+      <p className="text-muted-foreground mb-8 italic text-sm">
         Drag and drop movies to reorder. Click the edit icon to modify titles or search TMDB for correct movie information.
       </p>
 

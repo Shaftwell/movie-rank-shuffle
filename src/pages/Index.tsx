@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import MovieList from '@/components/MovieList';
 import { Movie } from '@/types/movie';
@@ -77,7 +76,7 @@ const Index = () => {
       <header className="bg-card py-8 border-b">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-3xl md:text-4xl font-bold text-primary">
-            The 25 Best Movies of my Life
+            The 20 Best Movies of my Life
           </h1>
           <Button 
             variant="outline" 

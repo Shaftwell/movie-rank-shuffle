@@ -11,7 +11,7 @@ import { Movie } from '@/types/movie';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clipboard, Facebook, Linkedin, X, Check, Share2, Download } from 'lucide-react';
+import { Clipboard, Facebook, Linkedin, X, Check, Share2, Download, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface SocialShareDialogProps {
@@ -25,27 +25,33 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
   const [activeTab, setActiveTab] = useState('preview');
   const { toast } = useToast();
   
-  const generateMovieList = () => {
-    let list = '🎬 My Top 25 Movies of All Time 🎬\n\n';
+  const generateMovieList = (includeLinks = false) => {
+    let list = '🎬 My Top 20 Movies of All Time 🎬\n\n';
     
-    // Make sure we only share a maximum of 25 movies
-    const moviesToShare = movies.slice(0, 25);
+    // Make sure we only share a maximum of 20 movies
+    const moviesToShare = movies.slice(0, 20);
     
     moviesToShare.forEach((movie) => {
-      list += `${movie.rank}. ${movie.title}${movie.year ? ` (${movie.year})` : ''}\n`;
+      let entry = `${movie.rank}. ${movie.title}${movie.year ? ` (${movie.year})` : ''}`;
+      
+      if (includeLinks && movie.id) {
+        entry += `\nhttps://www.themoviedb.org/movie/${movie.id}`;
+      }
+      
+      list += entry + '\n\n';
     });
     
-    list += '\nRanked with passion and personal preference! What would be on your list? 🍿';
+    list += 'Ranked with passion and personal preference! What would be on your list? 🍿';
     return list;
   };
   
   const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(generateMovieList());
+    navigator.clipboard.writeText(generateMovieList(true));
     setCopied(true);
     
     toast({
       title: "Copied to clipboard",
-      description: "Your movie list has been copied to clipboard!",
+      description: "Your movie list with TMDB links has been copied to clipboard!",
       duration: 2000,
     });
     
@@ -55,17 +61,18 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
   };
   
   const handleShareToX = () => {
+    // X.com has character limits, so we don't include TMDB links
     const text = encodeURIComponent(generateMovieList().substring(0, 280));
     window.open(`https://x.com/intent/tweet?text=${text}`, '_blank');
   };
   
   const handleShareToFacebook = () => {
-    const text = encodeURIComponent('Check out my top 25 movies of all time!');
+    const text = encodeURIComponent('Check out my top 20 movies of all time!');
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${text}`, '_blank');
   };
   
   const handleShareToLinkedIn = () => {
-    const text = encodeURIComponent('My Top 25 Movies of All Time');
+    const text = encodeURIComponent('My Top 20 Movies of All Time');
     window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(window.location.href)}&title=${text}`, '_blank');
   };
 
@@ -93,7 +100,7 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
                     <Share2 className="h-4 w-4 text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">My Top 25 Movies</h3>
+                    <h3 className="font-bold text-lg">My Top 20 Movies</h3>
                     <p className="text-xs text-muted-foreground">Ranked with passion and personal preference</p>
                   </div>
                 </div>
@@ -109,20 +116,32 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
               </div>
               
               <ScrollArea className="h-[300px] rounded border bg-background p-4">
-                <ol className="list-decimal pl-5 space-y-1.5">
-                  {movies.slice(0, 25).map((movie) => (
+                <ol className="list-decimal pl-5 space-y-3">
+                  {movies.slice(0, 20).map((movie) => (
                     <li key={movie.id} className="text-sm">
-                      <span className="font-medium">{movie.title}</span>
-                      {movie.year && <span className="text-muted-foreground"> ({movie.year})</span>}
-                      {movie.rottenTomatoesScore && (
-                        <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-                          movie.rottenTomatoesScore >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
-                          movie.rottenTomatoesScore >= 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
-                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {movie.rottenTomatoesScore}%
-                        </span>
-                      )}
+                      <div className="flex flex-col">
+                        <span className="font-medium">{movie.title}</span>
+                        <div className="flex items-center gap-2">
+                          {movie.year && <span className="text-muted-foreground">({movie.year})</span>}
+                          {movie.rottenTomatoesScore && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                              movie.rottenTomatoesScore >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                              movie.rottenTomatoesScore >= 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            }`}>
+                              {movie.rottenTomatoesScore}%
+                            </span>
+                          )}
+                          <a 
+                            href={`https://www.themoviedb.org/movie/${movie.id}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                          >
+                            TMDB <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ol>
@@ -181,7 +200,7 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
                   {copied ? <Check className="h-5 w-5" /> : <Clipboard className="h-5 w-5" />}
                   <div>
                     <p className="font-medium">{copied ? 'Copied!' : 'Copy Text'}</p>
-                    <p className="text-xs text-muted-foreground">Copy to clipboard</p>
+                    <p className="text-xs text-muted-foreground">Copy with TMDB links</p>
                   </div>
                 </Button>
               </div>
@@ -189,7 +208,7 @@ const SocialShareDialog = ({ isOpen, onClose, movies }: SocialShareDialogProps) 
               <div className="mt-6 p-4 bg-muted rounded-md">
                 <p className="text-sm font-medium mb-2">Preview:</p>
                 <ScrollArea className="h-[150px]">
-                  <p className="text-xs whitespace-pre-wrap text-muted-foreground">{generateMovieList()}</p>
+                  <p className="text-xs whitespace-pre-wrap text-muted-foreground">{generateMovieList(true)}</p>
                 </ScrollArea>
               </div>
             </div>

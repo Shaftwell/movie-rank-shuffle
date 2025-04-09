@@ -9,6 +9,7 @@ export interface Movie {
   imageUrl?: string;
   rottenTomatoesScore?: number;
   isEditing?: boolean;
+  watched?: boolean; // Add this field to track watched status
 }
 
 export interface TMDBMovie {
@@ -30,3 +31,4 @@ export const MOVIES_STORAGE_KEY = 'movieRankShuffleData';
 
 // Sorting options
 export type SortOption = 'rank' | 'title-asc' | 'title-desc' | 'year' | 'rating';
+

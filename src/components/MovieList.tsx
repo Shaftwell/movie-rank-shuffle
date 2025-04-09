@@ -35,7 +35,8 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     resetLocalStorage,
     setIsEditDialogOpen,
     setEditingMovie,
-    clearFilters
+    clearFilters,
+    handleToggleWatched
   } = useMovieData(initialMovies);
 
   return (
@@ -78,6 +79,7 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
           movies={filteredMovies}
           onDragEnd={handleDragEnd}
           onEditMovie={handleEditMovie}
+          onToggleWatched={handleToggleWatched}
           clearFilters={clearFilters}
         />
       )}

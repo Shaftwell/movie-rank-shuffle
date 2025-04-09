@@ -129,18 +129,18 @@ export function useMovieData(initialMovies: Movie[]) {
             genre: genreName,
             rottenTomatoesScore,
             imageUrl,
-            favorite: false
+            watched: false
           };
         }
         
-        return movie;
+        return { ...movie, watched: false };
       });
       
       const moviesWithDetails = await Promise.all(movieDetailsPromises);
       setMovies(moviesWithDetails);
     } catch (error) {
       console.error('Error fetching movie details:', error);
-      setMovies(initialMovies);
+      setMovies(initialMovies.map(movie => ({ ...movie, watched: false })));
     } finally {
       setIsLoading(false);
     }
@@ -199,6 +199,30 @@ export function useMovieData(initialMovies: Movie[]) {
 
     setFilteredMovies(result);
   }, [movies, searchTerm, selectedGenre, sortOption, sortDirection]);
+
+  // Handle toggling watched status
+  const handleToggleWatched = (id: number) => {
+    const updatedMovies = movies.map(movie => {
+      if (movie.id === id) {
+        const newWatchedStatus = !movie.watched;
+        return { ...movie, watched: newWatchedStatus };
+      }
+      return movie;
+    });
+    
+    setMovies(updatedMovies);
+    
+    // Find the movie that was toggled
+    const toggledMovie = updatedMovies.find(m => m.id === id);
+    
+    if (toggledMovie) {
+      toast({
+        title: toggledMovie.watched ? "Movie Marked as Watched" : "Movie Marked as Unwatched",
+        description: `"${toggledMovie.title}" has been ${toggledMovie.watched ? 'marked as watched' : 'removed from watched list'}`,
+        duration: 2000,
+      });
+    }
+  };
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source } = result;
@@ -259,6 +283,7 @@ export function useMovieData(initialMovies: Movie[]) {
         genre: existingMovie?.genre,
         imageUrl: existingMovie?.imageUrl,
         rottenTomatoesScore: existingMovie?.rottenTomatoesScore,
+        watched: existingMovie?.watched || false,
       };
     });
 
@@ -465,6 +490,7 @@ export function useMovieData(initialMovies: Movie[]) {
     resetLocalStorage,
     setIsEditDialogOpen,
     setEditingMovie,
-    clearFilters
+    clearFilters,
+    handleToggleWatched
   };
 }

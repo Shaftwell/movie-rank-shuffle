@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Star } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TMDBMovie } from '@/types/movie';
@@ -27,7 +27,7 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
     setError('');
     
     try {
-      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false&sort_by=vote_average.desc`;
+      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
       
       if (year) {
         searchUrl += `&year=${year}`;
@@ -37,9 +37,7 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
       const data = await response.json();
       
       if (data.results && data.results.length > 0) {
-        // Sort results by vote_average (rating) in descending order
-        const sortedResults = [...data.results].sort((a, b) => b.vote_average - a.vote_average);
-        setSearchResults(sortedResults);
+        setSearchResults(data.results);
       } else {
         setSearchResults([]);
         setError('No movies found. Try a different search term.');
@@ -51,13 +49,6 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
       setIsSearching(false);
     }
   };
-
-  // Auto-search when component mounts with initialQuery
-  React.useEffect(() => {
-    if (initialQuery) {
-      handleSearch();
-    }
-  }, []);
 
   return (
     <div className="space-y-4">
@@ -73,7 +64,7 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
           />
         </div>
         <Input 
-          placeholder="Year"
+          placeholder="Year (optional)"
           value={year}
           onChange={(e) => setYear(e.target.value)}
           className="w-24"
@@ -116,12 +107,9 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
                 <p className="text-sm text-muted-foreground">
                   {movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown year'}
                 </p>
-                <div className="flex items-center mt-1 gap-1">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <p className="text-xs">
-                    {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}/10
-                  </p>
-                </div>
+                <p className="text-xs mt-1 line-clamp-2">
+                  Rating: {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}/10
+                </p>
               </div>
             </div>
           ))}

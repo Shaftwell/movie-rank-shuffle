@@ -9,7 +9,6 @@ export interface Movie {
   imageUrl?: string;
   rottenTomatoesScore?: number;
   isEditing?: boolean;
-  tmdbId?: number; // Add TMDB ID for direct linking
 }
 
 export interface TMDBMovie {
@@ -27,7 +26,7 @@ export interface TMDBGenre {
 }
 
 // Local storage key for saving movie data
-export const MOVIES_STORAGE_KEY = 'top25MovieRankData';
+export const MOVIES_STORAGE_KEY = 'movieRankShuffleData';
 
 // Sorting options
 export type SortOption = 'rank' | 'title-asc' | 'title-desc' | 'year' | 'rating';

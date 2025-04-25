@@ -9,6 +9,7 @@ interface DraggableMovieListProps {
   movies: Movie[];
   onDragEnd: (result: DropResult) => void;
   onEditMovie: (id: number) => void;
+  onToggleWatched: (id: number) => void;
   clearFilters: () => void;
 }
 
@@ -16,6 +17,7 @@ const DraggableMovieList = ({
   movies, 
   onDragEnd,
   onEditMovie,
+  onToggleWatched,
   clearFilters
 }: DraggableMovieListProps) => {
   if (movies.length === 0) {
@@ -59,6 +61,7 @@ const DraggableMovieList = ({
                       isDragging={snapshot.isDragging}
                       dragHandleProps={provided.dragHandleProps}
                       onEditMovie={onEditMovie}
+                      onToggleWatched={onToggleWatched}
                     />
                   </div>
                 )}

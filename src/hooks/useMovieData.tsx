@@ -30,6 +30,11 @@ export function useMovieData(initialMovies: Movie[]) {
     if (savedMovies) {
       try {
         const parsedMovies = JSON.parse(savedMovies);
+        console.log('Loaded movies from localStorage:', parsedMovies.slice(0, 3).map(m => ({
+          title: m.title,
+          director: m.director,
+          actors: m.actors
+        })));
         setMovies(parsedMovies);
         setIsLoading(false);
       } catch (error) {
@@ -37,6 +42,7 @@ export function useMovieData(initialMovies: Movie[]) {
         fetchInitialMovieData();
       }
     } else {
+      console.log('No saved movies found, fetching initial data');
       fetchInitialMovieData();
     }
   }, []);
@@ -61,12 +67,19 @@ export function useMovieData(initialMovies: Movie[]) {
   const fetchInitialMovieData = async () => {
     setIsLoading(true);
     try {
-      const movieDetailsPromises = initialMovies.map(async (movie) => {
-        const tmdbMovie = await searchMovie(movie.title);
+      console.log('Starting to fetch movie data for', initialMovies.length, 'movies');
+      
+      const movieDetailsPromises = initialMovies.map(async (movie, index) => {
+        console.log(`Fetching data for movie ${index + 1}/${initialMovies.length}: ${movie.title}`);
+        
+        const tmdbMovie = await searchMovie(movie.title, movie.searchYear);
         
         if (tmdbMovie) {
+          console.log(`Found TMDB data for ${movie.title}:`, tmdbMovie);
+          
           // Fetch detailed movie information including cast and crew
           const movieDetails = await fetchMovieDetails(tmdbMovie.id);
+          console.log(`Movie details for ${movie.title}:`, movieDetails);
           
           // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
           const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
@@ -94,6 +107,9 @@ export function useMovieData(initialMovies: Movie[]) {
             const { director: extractedDirector, actors: extractedActors } = extractDirectorAndActors(movieDetails);
             director = extractedDirector;
             actors = extractedActors;
+            console.log(`Extracted for ${movie.title}:`, { director, actors });
+          } else {
+            console.log(`No detailed movie data found for ${movie.title}`);
           }
           
           return {
@@ -106,12 +122,23 @@ export function useMovieData(initialMovies: Movie[]) {
             actors,
             watched: false
           };
+        } else {
+          console.log(`No TMDB data found for ${movie.title}`);
         }
         
         return { ...movie, watched: false };
       });
       
       const moviesWithDetails = await Promise.all(movieDetailsPromises);
+      console.log('Finished fetching all movie data. Sample results:', 
+        moviesWithDetails.slice(0, 3).map(m => ({
+          title: m.title,
+          director: m.director,
+          actors: m.actors,
+          hasDirector: !!m.director,
+          hasActors: !!m.actors && m.actors.length > 0
+        }))
+      );
       setMovies(moviesWithDetails);
     } catch (error) {
       console.error('Error fetching movie details:', error);
@@ -201,8 +228,11 @@ export function useMovieData(initialMovies: Movie[]) {
   const handleDragEnd = (result: DropResult) => {
     const { destination, source } = result;
 
+    console.log('Drag end result:', result);
+
     // Dropped outside the list
     if (!destination) {
+      console.log('Dropped outside the list');
       return;
     }
 
@@ -211,6 +241,7 @@ export function useMovieData(initialMovies: Movie[]) {
       destination.droppableId === source.droppableId &&
       destination.index === source.index
     ) {
+      console.log('Dropped in the same position');
       return;
     }
 
@@ -220,6 +251,8 @@ export function useMovieData(initialMovies: Movie[]) {
     const [removed] = newFilteredMovies.splice(source.index, 1);
     // Insert it at the new position
     newFilteredMovies.splice(destination.index, 0, removed);
+
+    console.log(`Moving ${removed.title} from position ${source.index} to ${destination.index}`);
 
     // Update ranks based on new positions for all filtered movies
     const rankedFilteredMovies = newFilteredMovies.map((movie, index) => ({

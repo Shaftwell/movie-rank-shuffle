@@ -40,33 +40,42 @@ const DraggableMovieList = ({
             ref={provided.innerRef}
             {...provided.droppableProps}
           >
-            {movies.map((movie, index) => (
-              <Draggable 
-                key={movie.id.toString()} 
-                draggableId={movie.id.toString()} 
-                index={index}
-              >
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    className="animate-fade-in"
-                    style={{ 
-                      animationDelay: `${index * 25}ms`, 
-                      ...provided.draggableProps.style 
-                    }}
-                  >
-                    <MovieCard
-                      movie={movie}
-                      isDragging={snapshot.isDragging}
-                      dragHandleProps={provided.dragHandleProps}
-                      onEditMovie={onEditMovie}
-                      onToggleWatched={onToggleWatched}
-                    />
-                  </div>
-                )}
-              </Draggable>
-            ))}
+            {movies.map((movie, index) => {
+              console.log(`Movie ${movie.title}:`, {
+                director: movie.director,
+                actors: movie.actors,
+                hasDirector: !!movie.director,
+                hasActors: !!movie.actors && movie.actors.length > 0
+              });
+              
+              return (
+                <Draggable 
+                  key={`movie-${movie.id}`} 
+                  draggableId={`movie-${movie.id}`} 
+                  index={index}
+                >
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className="animate-fade-in"
+                      style={{ 
+                        animationDelay: `${index * 25}ms`, 
+                        ...provided.draggableProps.style 
+                      }}
+                    >
+                      <MovieCard
+                        movie={movie}
+                        isDragging={snapshot.isDragging}
+                        dragHandleProps={provided.dragHandleProps}
+                        onEditMovie={onEditMovie}
+                        onToggleWatched={onToggleWatched}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              );
+            })}
             {provided.placeholder}
           </div>
         )}

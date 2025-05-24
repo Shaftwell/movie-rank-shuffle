@@ -30,11 +30,6 @@ export function useMovieData(initialMovies: Movie[]) {
     if (savedMovies) {
       try {
         const parsedMovies = JSON.parse(savedMovies);
-        console.log('Loaded movies from localStorage:', parsedMovies.slice(0, 3).map(m => ({
-          title: m.title,
-          director: m.director,
-          actors: m.actors
-        })));
         setMovies(parsedMovies);
         setIsLoading(false);
       } catch (error) {
@@ -42,7 +37,6 @@ export function useMovieData(initialMovies: Movie[]) {
         fetchInitialMovieData();
       }
     } else {
-      console.log('No saved movies found, fetching initial data');
       fetchInitialMovieData();
     }
   }, []);
@@ -67,39 +61,25 @@ export function useMovieData(initialMovies: Movie[]) {
   const fetchInitialMovieData = async () => {
     setIsLoading(true);
     try {
-      console.log('Starting to fetch movie data for', initialMovies.length, 'movies');
-      
-      const movieDetailsPromises = initialMovies.map(async (movie, index) => {
-        console.log(`Fetching data for movie ${index + 1}/${initialMovies.length}: ${movie.title}`);
-        
+      const movieDetailsPromises = initialMovies.map(async (movie) => {
         const tmdbMovie = await searchMovie(movie.title, movie.searchYear);
         
         if (tmdbMovie) {
-          console.log(`Found TMDB data for ${movie.title}:`, tmdbMovie);
-          
-          // Fetch detailed movie information including cast and crew
           const movieDetails = await fetchMovieDetails(tmdbMovie.id);
-          console.log(`Movie details for ${movie.title}:`, movieDetails);
-          
-          // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
           const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
           
-          // Get the first genre
           const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
             ? genres.find(g => g.id === tmdbMovie.genre_ids[0])?.name
             : undefined;
           
-          // Extract year from release date
           const year = tmdbMovie.release_date 
             ? parseInt(tmdbMovie.release_date.split('-')[0], 10)
             : undefined;
           
-          // Get poster URL
           const imageUrl = tmdbMovie.poster_path 
             ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
             : undefined;
           
-          // Extract director and actors if available
           let director: string | undefined;
           let actors: string[] = [];
           
@@ -107,9 +87,6 @@ export function useMovieData(initialMovies: Movie[]) {
             const { director: extractedDirector, actors: extractedActors } = extractDirectorAndActors(movieDetails);
             director = extractedDirector;
             actors = extractedActors;
-            console.log(`Extracted for ${movie.title}:`, { director, actors });
-          } else {
-            console.log(`No detailed movie data found for ${movie.title}`);
           }
           
           return {
@@ -122,23 +99,12 @@ export function useMovieData(initialMovies: Movie[]) {
             actors,
             watched: false
           };
-        } else {
-          console.log(`No TMDB data found for ${movie.title}`);
         }
         
         return { ...movie, watched: false };
       });
       
       const moviesWithDetails = await Promise.all(movieDetailsPromises);
-      console.log('Finished fetching all movie data. Sample results:', 
-        moviesWithDetails.slice(0, 3).map(m => ({
-          title: m.title,
-          director: m.director,
-          actors: m.actors,
-          hasDirector: !!m.director,
-          hasActors: !!m.actors && m.actors.length > 0
-        }))
-      );
       setMovies(moviesWithDetails);
     } catch (error) {
       console.error('Error fetching movie details:', error);
@@ -202,7 +168,6 @@ export function useMovieData(initialMovies: Movie[]) {
     setFilteredMovies(result);
   }, [movies, searchTerm, selectedGenre, sortOption, sortDirection]);
 
-  // Handle toggling watched status
   const handleToggleWatched = (id: number) => {
     const updatedMovies = movies.map(movie => {
       if (movie.id === id) {
@@ -228,39 +193,26 @@ export function useMovieData(initialMovies: Movie[]) {
   const handleDragEnd = (result: DropResult) => {
     const { destination, source } = result;
 
-    console.log('Drag end result:', result);
-
-    // Dropped outside the list
     if (!destination) {
-      console.log('Dropped outside the list');
       return;
     }
 
-    // Dropped in the same position
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
     ) {
-      console.log('Dropped in the same position');
       return;
     }
 
-    // Create a copy of filtered movies
     const newFilteredMovies = Array.from(filteredMovies);
-    // Remove the moved item from the array
     const [removed] = newFilteredMovies.splice(source.index, 1);
-    // Insert it at the new position
     newFilteredMovies.splice(destination.index, 0, removed);
 
-    console.log(`Moving ${removed.title} from position ${source.index} to ${destination.index}`);
-
-    // Update ranks based on new positions for all filtered movies
     const rankedFilteredMovies = newFilteredMovies.map((movie, index) => ({
       ...movie,
       rank: index + 1,
     }));
 
-    // Update all movies with the new rankings
     const updatedMovies = movies.map(movie => {
       const updatedMovie = rankedFilteredMovies.find(m => m.id === movie.id);
       if (updatedMovie) {

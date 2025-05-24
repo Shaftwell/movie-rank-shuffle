@@ -2,20 +2,13 @@ import { useState, useEffect } from 'react';
 import { Movie, TMDBMovie, TMDBGenre, MOVIES_STORAGE_KEY, SortOption } from '@/types/movie';
 import { useToast } from '@/hooks/use-toast';
 import { DropResult } from 'react-beautiful-dnd';
-
-// TMDB API base URL for images
-const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
-
-// Special cases for remakes - map movie titles to specific search queries with years
-const SPECIAL_CASES: Record<string, { query: string, year?: number }> = {
-  "The Thomas Crown Affair (1999)": { query: "The Thomas Crown Affair", year: 1999 },
-  "Bloodsport (1988)": { query: "Bloodsport", year: 1988 },
-  "Sherlock Holmes (2009)": { query: "Sherlock Holmes", year: 2009 },
-  "Ocean's Eleven": { query: "Ocean's Eleven", year: 2001 },
-  "Parasite (기생충)": { query: "Parasite Gisaengchung", year: 2019 },
-  "Up (2009)": { query: "Up Pixar", year: 2009 },
-  "Gladiator": { query: "Gladiator Russell Crowe", year: 2000 },
-};
+import { 
+  fetchGenres, 
+  searchMovie, 
+  fetchMovieDetails, 
+  extractDirectorAndActors,
+  TMDB_IMAGE_URL 
+} from '@/services/tmdbService';
 
 export function useMovieData(initialMovies: Movie[]) {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -57,52 +50,23 @@ export function useMovieData(initialMovies: Movie[]) {
 
   // Fetch genres from TMDB API
   useEffect(() => {
-    const fetchGenres = async () => {
-      try {
-        const response = await fetch(
-          'https://api.themoviedb.org/3/genre/movie/list?api_key=2dca580c2a14b55200e784d157207b4d&language=en-US'
-        );
-        const data = await response.json();
-        setGenres(data.genres);
-      } catch (error) {
-        console.error('Error fetching genres:', error);
-      }
+    const loadGenres = async () => {
+      const genresList = await fetchGenres();
+      setGenres(genresList);
     };
-
-    fetchGenres();
+    loadGenres();
   }, []);
 
-  // Function to fetch initial movie data
+  // Function to fetch initial movie data with enhanced details
   const fetchInitialMovieData = async () => {
     setIsLoading(true);
     try {
       const movieDetailsPromises = initialMovies.map(async (movie) => {
-        // Handle special cases for remakes
-        const specialCase = SPECIAL_CASES[movie.title];
+        const tmdbMovie = await searchMovie(movie.title);
         
-        // Prepare search query with potential year filter
-        let searchQuery = movie.title;
-        let searchYear = undefined;
-        
-        if (specialCase) {
-          searchQuery = specialCase.query;
-          searchYear = specialCase.year;
-          console.log(`Using special case for ${movie.title}: query=${searchQuery}, year=${searchYear}`);
-        }
-        
-        // Build search URL with optional year parameter
-        let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
-        
-        if (searchYear) {
-          searchUrl += `&year=${searchYear}`;
-        }
-        
-        // Search for the movie to get TMDB ID
-        const searchResponse = await fetch(searchUrl);
-        const searchData = await searchResponse.json();
-        
-        if (searchData.results && searchData.results.length > 0) {
-          const tmdbMovie = searchData.results[0] as TMDBMovie;
+        if (tmdbMovie) {
+          // Fetch detailed movie information including cast and crew
+          const movieDetails = await fetchMovieDetails(tmdbMovie.id);
           
           // Convert TMDB vote average (0-10) to Rotten Tomatoes style score (0-100)
           const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
@@ -122,13 +86,24 @@ export function useMovieData(initialMovies: Movie[]) {
             ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
             : undefined;
           
+          // Extract director and actors if available
+          let director: string | undefined;
+          let actors: string[] = [];
+          
+          if (movieDetails) {
+            const { director: extractedDirector, actors: extractedActors } = extractDirectorAndActors(movieDetails);
+            director = extractedDirector;
+            actors = extractedActors;
+          }
+          
           return {
             ...movie,
             year,
-            searchYear,
             genre: genreName,
             rottenTomatoesScore,
             imageUrl,
+            director,
+            actors,
             watched: false
           };
         }
@@ -153,7 +128,9 @@ export function useMovieData(initialMovies: Movie[]) {
     // Apply search filter
     if (searchTerm) {
       result = result.filter(movie => 
-        movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+        movie.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        movie.director?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        movie.actors?.some(actor => actor.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     
@@ -177,7 +154,6 @@ export function useMovieData(initialMovies: Movie[]) {
           return b.title.localeCompare(a.title);
           
         case 'year':
-          // Handle missing year values
           const yearA = a.year || 0;
           const yearB = b.year || 0;
           return sortDirection === 'asc'
@@ -185,7 +161,6 @@ export function useMovieData(initialMovies: Movie[]) {
             : yearB - yearA;
             
         case 'rating':
-          // Handle missing rating values
           const ratingA = a.rottenTomatoesScore || 0;
           const ratingB = b.rottenTomatoesScore || 0;
           return sortDirection === 'asc'
@@ -212,7 +187,6 @@ export function useMovieData(initialMovies: Movie[]) {
     
     setMovies(updatedMovies);
     
-    // Find the movie that was toggled
     const toggledMovie = updatedMovies.find(m => m.id === id);
     
     if (toggledMovie) {
@@ -279,10 +253,11 @@ export function useMovieData(initialMovies: Movie[]) {
         ...movie,
         rank: index + 1,
         year: existingMovie?.year,
-        searchYear: existingMovie?.searchYear,
         genre: existingMovie?.genre,
         imageUrl: existingMovie?.imageUrl,
         rottenTomatoesScore: existingMovie?.rottenTomatoesScore,
+        director: existingMovie?.director,
+        actors: existingMovie?.actors,
         watched: existingMovie?.watched || false,
       };
     });
@@ -323,28 +298,10 @@ export function useMovieData(initialMovies: Movie[]) {
     setMovies(updatedMovies);
     
     try {
-      const specialCase = SPECIAL_CASES[newTitle];
+      const tmdbMovie = await searchMovie(newTitle);
       
-      let searchQuery = newTitle;
-      let searchYear = undefined;
-      
-      if (specialCase) {
-        searchQuery = specialCase.query;
-        searchYear = specialCase.year;
-      }
-      
-      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
-      
-      if (searchYear) {
-        searchUrl += `&year=${searchYear}`;
-      }
-      
-      const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
-      
-      if (searchData.results && searchData.results.length > 0) {
-        const tmdbMovie = searchData.results[0] as TMDBMovie;
-        
+      if (tmdbMovie) {
+        const movieDetails = await fetchMovieDetails(tmdbMovie.id);
         const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
         
         const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
@@ -359,16 +316,26 @@ export function useMovieData(initialMovies: Movie[]) {
           ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
           : undefined;
         
+        let director: string | undefined;
+        let actors: string[] = [];
+        
+        if (movieDetails) {
+          const { director: extractedDirector, actors: extractedActors } = extractDirectorAndActors(movieDetails);
+          director = extractedDirector;
+          actors = extractedActors;
+        }
+        
         const refreshedMovies = movies.map(movie => {
           if (movie.id === id) {
             return {
               ...movie,
               title: newTitle,
               year,
-              searchYear,
               genre: genreName,
               rottenTomatoesScore,
-              imageUrl
+              imageUrl,
+              director,
+              actors
             };
           }
           return movie;
@@ -420,7 +387,6 @@ export function useMovieData(initialMovies: Movie[]) {
 
   const handleSelectTMDBMovie = (id: number, tmdbMovie: TMDBMovie) => {
     try {
-      // Process the selected TMDB movie data
       const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
       
       const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
@@ -435,7 +401,6 @@ export function useMovieData(initialMovies: Movie[]) {
         ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
         : undefined;
       
-      // Update the movie with the new data from TMDB
       const updatedMovies = movies.map(movie => {
         if (movie.id === id) {
           return {

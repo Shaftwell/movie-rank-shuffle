@@ -38,7 +38,6 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     setIsEditDialogOpen,
     setEditingMovie,
     clearFilters,
-    handleToggleWatched,
     importRankings
   } = useMovieData(initialMovies);
 
@@ -89,7 +88,6 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
             movies={filteredMovies}
             onDragEnd={handleDragEnd}
             onEditMovie={handleEditMovie}
-            onToggleWatched={handleToggleWatched}
             clearFilters={clearFilters}
           />
         )}

@@ -49,13 +49,14 @@ export async function enrichMovieWithTMDB(
 }
 
 /**
- * Enriches movie with basic TMDB data (without director/actors for faster loading)
+ * Enriches movie with basic TMDB data including director and actors
  */
-export function enrichMovieWithBasicTMDB(
+export async function enrichMovieWithBasicTMDB(
   movie: Movie,
   tmdbMovie: TMDBMovie,
   genres: TMDBGenre[]
-): Movie {
+): Promise<Movie> {
+  const movieDetails = await fetchMovieDetails(tmdbMovie.id);
   const rottenTomatoesScore = Math.round(tmdbMovie.vote_average * 10);
 
   const genreName = tmdbMovie.genre_ids.length > 0 && genres.length > 0
@@ -70,11 +71,22 @@ export function enrichMovieWithBasicTMDB(
     ? `${TMDB_IMAGE_URL}${tmdbMovie.poster_path}`
     : undefined;
 
+  let director: string | undefined;
+  let actors: string[] = [];
+
+  if (movieDetails) {
+    const { director: extractedDirector, actors: extractedActors } = extractDirectorAndActors(movieDetails);
+    director = extractedDirector;
+    actors = extractedActors;
+  }
+
   return {
     ...movie,
     year,
     genre: genreName,
     rottenTomatoesScore,
     imageUrl,
+    director,
+    actors,
   };
 }

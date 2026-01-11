@@ -273,6 +273,15 @@ export function useMovieData(initialMovies: Movie[]) {
     setSelectedGenre('all');
   }, []);
 
+  // Import rankings from token
+  const importRankings = useCallback((importedMovies: Movie[]) => {
+    setMovies(importedMovies);
+    toast({
+      title: "Rankings Imported",
+      description: "Your movie rankings have been updated.",
+    });
+  }, [setMovies, toast]);
+
   return {
     movies,
     filteredMovies,
@@ -298,5 +307,6 @@ export function useMovieData(initialMovies: Movie[]) {
     setEditingMovie,
     clearFilters,
     handleToggleWatched,
+    importRankings,
   };
 }

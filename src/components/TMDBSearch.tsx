@@ -31,7 +31,8 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
     setError('');
 
     try {
-      const apiKey = import.meta.env.VITE_TMDB_API_KEY;
+      // Try to get API key from env, fallback to direct value if not available
+      const apiKey = import.meta.env.VITE_TMDB_API_KEY || '2dca580c2a14b55200e784d157207b4d';
 
       if (!apiKey) {
         throw new Error('TMDB API key not configured');

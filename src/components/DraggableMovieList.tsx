@@ -13,8 +13,8 @@ interface DraggableMovieListProps {
   clearFilters: () => void;
 }
 
-const DraggableMovieList = ({ 
-  movies, 
+const DraggableMovieList = React.memo(({
+  movies,
   onDragEnd,
   onEditMovie,
   onToggleWatched,
@@ -73,6 +73,8 @@ const DraggableMovieList = ({
       </Droppable>
     </DragDropContext>
   );
-};
+});
+
+DraggableMovieList.displayName = 'DraggableMovieList';
 
 export default DraggableMovieList;

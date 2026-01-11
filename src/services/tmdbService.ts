@@ -1,7 +1,9 @@
 
 import { TMDBMovie, TMDBGenre, TMDBMovieDetails } from '@/types/movie';
 
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+// Try to get API key from env, fallback to direct value if not available
+// This fallback helps during development if the dev server hasn't been restarted
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '2dca580c2a14b55200e784d157207b4d';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 export const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
 

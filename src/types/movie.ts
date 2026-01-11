@@ -9,7 +9,6 @@ export interface Movie {
   imageUrl?: string;
   rottenTomatoesScore?: number;
   isEditing?: boolean;
-  watched?: boolean; // Add this field to track watched status
   director?: string;
   actors?: string[];
 }
@@ -21,6 +20,7 @@ export interface TMDBMovie {
   poster_path: string;
   vote_average: number;
   genre_ids: number[];
+  overview?: string;
 }
 
 export interface TMDBGenre {

@@ -23,12 +23,19 @@ export function useMovieData(initialMovies: Movie[]) {
     fetchGenres().then(setGenres);
   }, []);
 
-  // Initialize movies if not in localStorage
+  // Initialize movies if not in localStorage or if missing director/actors
   useEffect(() => {
     if (movies.length === 0) {
       fetchInitialMovieData();
     } else {
-      setIsLoading(false);
+      // Check if movies are missing director/actors data
+      const needsRefresh = movies.some(m => !m.director && !m.actors);
+      if (needsRefresh) {
+        console.log('Movies missing director/actors data, refreshing...');
+        fetchInitialMovieData();
+      } else {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -41,14 +48,14 @@ export function useMovieData(initialMovies: Movie[]) {
         if (tmdbMovie) {
           return enrichMovieWithTMDB(movie, tmdbMovie, genres);
         }
-        return { ...movie, watched: false };
+        return movie;
       });
 
       const moviesWithDetails = await Promise.all(movieDetailsPromises);
       setMovies(moviesWithDetails);
     } catch (error) {
       console.error('Error fetching movie details:', error);
-      setMovies(initialMovies.map(movie => ({ ...movie, watched: false })));
+      setMovies(initialMovies);
       toast({
         title: "Error Loading Movies",
         description: "Failed to fetch movie details from TMDB.",
@@ -218,12 +225,12 @@ export function useMovieData(initialMovies: Movie[]) {
   }, [movies, genres, setMovies, toast]);
 
   // Update movie with selected TMDB data
-  const handleSelectTMDBMovie = useCallback((id: number, tmdbMovie: TMDBMovie) => {
+  const handleSelectTMDBMovie = useCallback(async (id: number, tmdbMovie: TMDBMovie) => {
     try {
       const movie = movies.find(m => m.id === id);
       if (!movie) return;
 
-      const enrichedMovie = enrichMovieWithBasicTMDB(movie, tmdbMovie, genres);
+      const enrichedMovie = await enrichMovieWithBasicTMDB(movie, tmdbMovie, genres);
 
       setMovies(movies.map(m =>
         m.id === id ? { ...enrichedMovie, title: tmdbMovie.title } : m

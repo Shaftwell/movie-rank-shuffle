@@ -15,10 +15,10 @@ interface MovieCardProps {
   onToggleWatched?: (id: number) => void;
 }
 
-const MovieCard = ({ 
-  movie, 
-  isDragging, 
-  dragHandleProps, 
+const MovieCard = React.memo(({
+  movie,
+  isDragging,
+  dragHandleProps,
   onEditMovie,
   onToggleWatched
 }: MovieCardProps) => {
@@ -165,6 +165,8 @@ const MovieCard = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+MovieCard.displayName = 'MovieCard';
 
 export default MovieCard;

@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TMDBMovie } from '@/types/movie';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w200";
+import { TMDB_IMAGE_URL } from '@/services/tmdbService';
 
 interface TMDBSearchProps {
   onSelectMovie: (movie: TMDBMovie) => void;
@@ -22,20 +21,21 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     setError('');
-    
+
     try {
-      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=2dca580c2a14b55200e784d157207b4d&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
-      
+      const apiKey = import.meta.env.VITE_TMDB_API_KEY;
+      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(searchQuery)}&include_adult=false`;
+
       if (year) {
         searchUrl += `&year=${year}`;
       }
-      
+
       const response = await fetch(searchUrl);
       const data = await response.json();
-      
+
       if (data.results && data.results.length > 0) {
         setSearchResults(data.results);
       } else {

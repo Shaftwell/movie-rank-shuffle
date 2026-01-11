@@ -19,7 +19,7 @@ interface MovieFiltersProps {
   uniqueGenres: string[];
 }
 
-const MovieFilters = ({
+const MovieFilters = React.memo(({
   searchTerm,
   setSearchTerm,
   selectedGenre,
@@ -53,6 +53,8 @@ const MovieFilters = ({
       </Select>
     </div>
   );
-};
+});
+
+MovieFilters.displayName = 'MovieFilters';
 
 export default MovieFilters;

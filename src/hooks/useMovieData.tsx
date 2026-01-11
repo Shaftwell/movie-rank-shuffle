@@ -110,20 +110,6 @@ export function useMovieData(initialMovies: Movie[]) {
     [movies]
   );
 
-  // Toggle watched status
-  const handleToggleWatched = useCallback((id: number) => {
-    setMovies(movies.map(movie =>
-      movie.id === id ? { ...movie, watched: !movie.watched } : movie
-    ));
-
-    const movie = movies.find(m => m.id === id);
-    if (movie) {
-      toast({
-        title: !movie.watched ? "Marked as Watched" : "Marked as Unwatched",
-        description: `"${movie.title}"`,
-      });
-    }
-  }, [movies, setMovies, toast]);
 
   // Handle drag and drop
   const handleDragEnd = useCallback((result: DropResult) => {
@@ -306,7 +292,6 @@ export function useMovieData(initialMovies: Movie[]) {
     setIsEditDialogOpen,
     setEditingMovie,
     clearFilters,
-    handleToggleWatched,
     importRankings,
   };
 }

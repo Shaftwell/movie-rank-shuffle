@@ -1,16 +1,21 @@
-
 export interface Movie {
   id: number;
   title: string;
   rank: number;
   year?: number;
-  searchYear?: number; // Add this field to specify a year for search
+  searchYear?: number;
   genre?: string;
   imageUrl?: string;
+  tmdbScore?: number;
+  /** @deprecated Use tmdbScore. Kept so existing localStorage data still works. */
   rottenTomatoesScore?: number;
   isEditing?: boolean;
   director?: string;
   actors?: string[];
+}
+
+export function getMovieScore(movie: Movie): number | undefined {
+  return movie.tmdbScore ?? movie.rottenTomatoesScore;
 }
 
 export interface TMDBMovie {
@@ -51,8 +56,6 @@ export interface TMDBMovieDetails {
   };
 }
 
-// Local storage key for saving movie data
 export const MOVIES_STORAGE_KEY = 'movieRankShuffleData';
 
-// Sorting options
 export type SortOption = 'rank' | 'title-asc' | 'title-desc' | 'year' | 'rating';

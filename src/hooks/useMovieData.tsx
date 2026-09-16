@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Movie, TMDBMovie, TMDBGenre, MOVIES_STORAGE_KEY, SortOption } from '@/types/movie';
+import { Movie, TMDBMovie, TMDBGenre, MOVIES_STORAGE_KEY, SortOption, getMovieScore } from '@/types/movie';
 import { useToast } from '@/hooks/use-toast';
-import { DropResult } from 'react-beautiful-dnd';
-import { fetchGenres, searchMovie } from '@/services/tmdbService';
-import { enrichMovieWithTMDB, enrichMovieWithBasicTMDB } from '@/utils/movieEnrichment';
+import { DropResult } from '@hello-pangea/dnd';
+import { fetchGenres, searchMovie, mapPool } from '@/services/tmdbService';
+import { enrichMovieWithTMDB } from '@/utils/movieEnrichment';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+const TMDB_CONCURRENCY = 5;
 
 export function useMovieData(initialMovies: Movie[]) {
   const { toast } = useToast();
@@ -18,74 +20,75 @@ export function useMovieData(initialMovies: Movie[]) {
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Load genres on mount
-  useEffect(() => {
-    fetchGenres().then(setGenres);
-  }, []);
+  const fetchInitialMovieData = useCallback(
+    async (genreList: TMDBGenre[]) => {
+      setIsLoading(true);
+      try {
+        const moviesWithDetails = await mapPool(initialMovies, TMDB_CONCURRENCY, async (movie) => {
+          const tmdbMovie = await searchMovie(movie.title, movie.searchYear);
+          if (tmdbMovie) {
+            return enrichMovieWithTMDB(movie, tmdbMovie, genreList);
+          }
+          return movie;
+        });
+        setMovies(moviesWithDetails);
+      } catch (error) {
+        console.error('Error fetching movie details:', error);
+        setMovies(initialMovies);
+        toast({
+          title: 'Error Loading Movies',
+          description: 'Failed to fetch movie details from TMDB.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [initialMovies, setMovies, toast]
+  );
 
-  // Initialize movies if not in localStorage or if missing director/actors
   useEffect(() => {
-    if (movies.length === 0) {
-      fetchInitialMovieData();
-    } else {
-      // Check if movies are missing director/actors data
-      const needsRefresh = movies.some(m => !m.director && !m.actors);
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      const loadedGenres = await fetchGenres();
+      if (cancelled) return;
+      setGenres(loadedGenres);
+
+      const needsRefresh =
+        movies.length === 0 || movies.some((m) => !m.director && !m.actors);
       if (needsRefresh) {
-        console.log('Movies missing director/actors data, refreshing...');
-        fetchInitialMovieData();
+        await fetchInitialMovieData(loadedGenres);
       } else {
         setIsLoading(false);
       }
-    }
+    };
+
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch initial movie data with TMDB enrichment
-  const fetchInitialMovieData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const movieDetailsPromises = initialMovies.map(async (movie) => {
-        const tmdbMovie = await searchMovie(movie.title, movie.searchYear);
-        if (tmdbMovie) {
-          return enrichMovieWithTMDB(movie, tmdbMovie, genres);
-        }
-        return movie;
-      });
-
-      const moviesWithDetails = await Promise.all(movieDetailsPromises);
-      setMovies(moviesWithDetails);
-    } catch (error) {
-      console.error('Error fetching movie details:', error);
-      setMovies(initialMovies);
-      toast({
-        title: "Error Loading Movies",
-        description: "Failed to fetch movie details from TMDB.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [initialMovies, genres, setMovies, toast]);
-
-  // Memoized filtered and sorted movies
   const filteredMovies = useMemo(() => {
     let result = [...movies];
 
-    // Apply search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      result = result.filter(movie =>
-        movie.title.toLowerCase().includes(searchLower) ||
-        movie.director?.toLowerCase().includes(searchLower) ||
-        movie.actors?.some(actor => actor.toLowerCase().includes(searchLower))
+      result = result.filter(
+        (movie) =>
+          movie.title.toLowerCase().includes(searchLower) ||
+          movie.director?.toLowerCase().includes(searchLower) ||
+          movie.actors?.some((actor) => actor.toLowerCase().includes(searchLower))
       );
     }
 
-    // Apply genre filter
     if (selectedGenre !== 'all') {
-      result = result.filter(movie => movie.genre === selectedGenre);
+      result = result.filter((movie) => movie.genre === selectedGenre);
     }
 
-    // Apply sorting
     result.sort((a, b) => {
       let comparison = 0;
 
@@ -101,7 +104,7 @@ export function useMovieData(initialMovies: Movie[]) {
           comparison = (a.year || 0) - (b.year || 0);
           break;
         case 'rating':
-          comparison = (a.rottenTomatoesScore || 0) - (b.rottenTomatoesScore || 0);
+          comparison = (getMovieScore(a) || 0) - (getMovieScore(b) || 0);
           break;
       }
 
@@ -111,169 +114,162 @@ export function useMovieData(initialMovies: Movie[]) {
     return result;
   }, [movies, searchTerm, selectedGenre, sortOption, sortDirection]);
 
-  // Get unique genres from movies
   const uniqueGenres = useMemo(
-    () => Array.from(new Set(movies.filter(m => m.genre).map(m => m.genre!))),
+    () => Array.from(new Set(movies.filter((m) => m.genre).map((m) => m.genre!))),
     [movies]
   );
 
+  const handleDragEnd = useCallback(
+    (result: DropResult) => {
+      const { destination, source } = result;
 
-  // Handle drag and drop
-  const handleDragEnd = useCallback((result: DropResult) => {
-    const { destination, source } = result;
+      if (
+        !destination ||
+        (destination.droppableId === source.droppableId && destination.index === source.index)
+      ) {
+        return;
+      }
 
-    if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
-      return;
-    }
+      const reordered = Array.from(filteredMovies);
+      const [removed] = reordered.splice(source.index, 1);
+      reordered.splice(destination.index, 0, removed);
 
-    const newFilteredMovies = Array.from(filteredMovies);
-    const [removed] = newFilteredMovies.splice(source.index, 1);
-    newFilteredMovies.splice(destination.index, 0, removed);
+      // Keep the existing rank numbers of the visible list; reassign them
+      // in the new order so a filtered drag does not smash global ranks to 1..n.
+      const preservedRanks = filteredMovies.map((movie) => movie.rank).sort((a, b) => a - b);
+      const reRankedVisible = reordered.map((movie, index) => ({
+        ...movie,
+        rank: preservedRanks[index],
+      }));
 
-    // Update ranks
-    const rankedMovies = newFilteredMovies.map((movie, index) => ({
-      ...movie,
-      rank: index + 1,
-    }));
+      const byId = new Map(reRankedVisible.map((movie) => [movie.id, movie]));
+      setMovies(movies.map((movie) => byId.get(movie.id) || movie));
 
-    // Merge with unfiltered movies
-    const updatedMovies = movies.map(movie => {
-      const updated = rankedMovies.find(m => m.id === movie.id);
-      return updated || movie;
-    });
+      toast({
+        title: 'Ranking Updated',
+        description: `"${removed.title}" is now #${preservedRanks[destination.index]}`,
+      });
+    },
+    [filteredMovies, movies, setMovies, toast]
+  );
 
-    setMovies(updatedMovies);
-
-    toast({
-      title: "Ranking Updated",
-      description: `"${removed.title}" is now #${destination.index + 1}`,
-    });
-  }, [filteredMovies, movies, setMovies, toast]);
-
-  // Reset to original rankings
   const resetRankings = useCallback(() => {
     const resetMovies = initialMovies.map((movie, index) => {
-      const existing = movies.find(m => m.id === movie.id);
+      const existing = movies.find((m) => m.id === movie.id);
       return existing ? { ...existing, rank: index + 1 } : { ...movie, rank: index + 1 };
     });
 
     setMovies(resetMovies);
     toast({
-      title: "Rankings Reset",
-      description: "Movies returned to original order.",
+      title: 'Rankings Reset',
+      description: 'Movies returned to original order.',
     });
   }, [initialMovies, movies, setMovies, toast]);
 
-  // Toggle sort direction
   const toggleSortDirection = useCallback(() => {
-    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   }, []);
 
-  // Handle sort option change
   const handleSortOptionChange = useCallback((value: string) => {
     setSortOption(value as SortOption);
   }, []);
 
-  // Open edit dialog
-  const handleEditMovie = useCallback((id: number) => {
-    const movie = movies.find(m => m.id === id);
-    if (movie) {
-      setEditingMovie(movie);
-      setIsEditDialogOpen(true);
-    }
-  }, [movies]);
+  const handleEditMovie = useCallback(
+    (id: number) => {
+      const movie = movies.find((m) => m.id === id);
+      if (movie) {
+        setEditingMovie(movie);
+        setIsEditDialogOpen(true);
+      }
+    },
+    [movies]
+  );
 
-  // Save movie title and refresh TMDB data
-  const handleSaveMovieTitle = useCallback(async (id: number, newTitle: string) => {
-    // Update title immediately
-    setMovies(movies.map(movie =>
-      movie.id === id ? { ...movie, title: newTitle } : movie
-    ));
+  const handleSaveMovieTitle = useCallback(
+    async (id: number, newTitle: string) => {
+      setMovies(movies.map((movie) => (movie.id === id ? { ...movie, title: newTitle } : movie)));
 
-    try {
-      const tmdbMovie = await searchMovie(newTitle);
-
-      if (tmdbMovie) {
-        const enrichedMovie = await enrichMovieWithTMDB(
-          movies.find(m => m.id === id)!,
-          tmdbMovie,
-          genres
-        );
-
-        setMovies(movies.map(movie =>
-          movie.id === id ? { ...enrichedMovie, title: newTitle } : movie
-        ));
-
+      try {
+        const tmdbMovie = await searchMovie(newTitle);
+        const current = movies.find((m) => m.id === id);
+        if (tmdbMovie && current) {
+          const enrichedMovie = await enrichMovieWithTMDB(current, tmdbMovie, genres);
+          setMovies(
+            movies.map((movie) => (movie.id === id ? { ...enrichedMovie, title: newTitle } : movie))
+          );
+          toast({
+            title: 'Movie Updated',
+            description: `"${newTitle}" updated with fresh data.`,
+          });
+        } else {
+          toast({
+            title: 'Title Updated',
+            description: `Title changed to "${newTitle}". No TMDB data found.`,
+          });
+        }
+      } catch (error) {
+        console.error('Error refreshing movie data:', error);
         toast({
-          title: "Movie Updated",
-          description: `"${newTitle}" updated with fresh data.`,
-        });
-      } else {
-        toast({
-          title: "Title Updated",
-          description: `Title changed to "${newTitle}". No TMDB data found.`,
+          title: 'Update Error',
+          description: 'Failed to refresh movie data.',
+          variant: 'destructive',
         });
       }
-    } catch (error) {
-      console.error('Error refreshing movie data:', error);
-      toast({
-        title: "Update Error",
-        description: "Failed to refresh movie data.",
-        variant: "destructive",
-      });
-    }
-  }, [movies, genres, setMovies, toast]);
+    },
+    [movies, genres, setMovies, toast]
+  );
 
-  // Update movie with selected TMDB data
-  const handleSelectTMDBMovie = useCallback(async (id: number, tmdbMovie: TMDBMovie) => {
-    try {
-      const movie = movies.find(m => m.id === id);
-      if (!movie) return;
+  const handleSelectTMDBMovie = useCallback(
+    async (id: number, tmdbMovie: TMDBMovie) => {
+      try {
+        const movie = movies.find((m) => m.id === id);
+        if (!movie) return;
 
-      const enrichedMovie = await enrichMovieWithBasicTMDB(movie, tmdbMovie, genres);
+        const enrichedMovie = await enrichMovieWithTMDB(movie, tmdbMovie, genres);
+        setMovies(
+          movies.map((m) => (m.id === id ? { ...enrichedMovie, title: tmdbMovie.title } : m))
+        );
 
-      setMovies(movies.map(m =>
-        m.id === id ? { ...enrichedMovie, title: tmdbMovie.title } : m
-      ));
+        toast({
+          title: 'Movie Updated',
+          description: `"${tmdbMovie.title}" updated with TMDB data.`,
+        });
+      } catch (error) {
+        console.error('Error updating movie with TMDB data:', error);
+        toast({
+          title: 'Update Error',
+          description: 'Failed to update movie.',
+          variant: 'destructive',
+        });
+      }
+    },
+    [movies, genres, setMovies, toast]
+  );
 
-      toast({
-        title: "Movie Updated",
-        description: `"${tmdbMovie.title}" updated with TMDB data.`,
-      });
-    } catch (error) {
-      console.error('Error updating movie with TMDB data:', error);
-      toast({
-        title: "Update Error",
-        description: "Failed to update movie.",
-        variant: "destructive",
-      });
-    }
-  }, [movies, genres, setMovies, toast]);
-
-  // Reset all data
   const resetLocalStorage = useCallback(() => {
     clearMovies();
-    fetchInitialMovieData();
+    void fetchInitialMovieData(genres);
     toast({
-      title: "Data Reset",
-      description: "All data cleared and reset to default.",
+      title: 'Data Reset',
+      description: 'All data cleared and reset to default.',
     });
-  }, [clearMovies, fetchInitialMovieData, toast]);
+  }, [clearMovies, fetchInitialMovieData, genres, toast]);
 
-  // Clear all filters
   const clearFilters = useCallback(() => {
     setSearchTerm('');
     setSelectedGenre('all');
   }, []);
 
-  // Import rankings from token
-  const importRankings = useCallback((importedMovies: Movie[]) => {
-    setMovies(importedMovies);
-    toast({
-      title: "Rankings Imported",
-      description: "Your movie rankings have been updated.",
-    });
-  }, [setMovies, toast]);
+  const importRankings = useCallback(
+    (importedMovies: Movie[]) => {
+      setMovies(importedMovies);
+      toast({
+        title: 'Rankings Imported',
+        description: 'Your movie rankings have been updated.',
+      });
+    },
+    [setMovies, toast]
+  );
 
   return {
     movies,

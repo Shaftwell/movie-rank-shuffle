@@ -4,9 +4,11 @@ Personal Top 100 movie rankings with TMDB posters, drag-and-drop order, search, 
 
 ## Live sites
 
+- **Lovable (live now):** https://movie-rank-shuffle.lovable.app/
 - **GitHub Pages:** https://shaftwell.github.io/movie-rank-shuffle/
-- **Lovable:** https://movie-rank-shuffle.lovable.app/
 - **Source:** https://github.com/Shaftwell/movie-rank-shuffle
+
+GitHub Pages needs a one-time switch in repo settings (see Deploy below). The `gh-pages` branch is already published by Actions.
 
 ## Run locally
 
@@ -30,13 +32,17 @@ npm run preview  # serve the production build locally
 
 ## Deploy
 
-Pushes to `main` build and publish GitHub Pages via `.github/workflows/deploy-pages.yml`.
+Pushes to `main` build the site and update the `gh-pages` branch
+(`.github/workflows/deploy-pages.yml`).
 
-If the Pages site 404s after the first workflow run, enable Pages once:
+Enable the public Pages URL once:
 
 1. Open https://github.com/Shaftwell/movie-rank-shuffle/settings/pages
-2. Under **Build and deployment → Source**, choose **GitHub Actions**
-3. Re-run the **Deploy to GitHub Pages** workflow if needed
+2. Under **Build and deployment → Source**, choose **Deploy from a branch**
+3. Branch: **gh-pages**, folder: **/ (root)**
+4. Save
+
+The site will be at https://shaftwell.github.io/movie-rank-shuffle/ a minute later.
 
 ## Stack
 

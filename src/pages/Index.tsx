@@ -12,6 +12,7 @@ const movieTitles = [
   'Interstellar',
   'The Social Network',
   'V for Vendetta',
+  'RRR',
   'The Devils Advocate',
   'Rounders',
   'Limitless',
@@ -105,7 +106,6 @@ const movieTitles = [
   'Top Gun',
   'Cast Away',
   'The Goonies',
-  'RRR',
 ];
 
 const Index = () => {

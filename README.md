@@ -2,11 +2,11 @@
 
 Personal Top 100 movie rankings with TMDB posters, drag-and-drop order, search, filters, and shareable ranking tokens.
 
-## Live sites
+**Live app:** https://shaftwell.github.io/movie-rank-shuffle/
 
-- **GitHub Pages:** https://shaftwell.github.io/movie-rank-shuffle/
-- **Lovable:** https://movie-rank-shuffle.lovable.app/
-- **Source:** https://github.com/Shaftwell/movie-rank-shuffle
+**Source:** https://github.com/Shaftwell/movie-rank-shuffle
+
+This repo is the source of truth. Changes land on `main` and GitHub Actions publishes GitHub Pages.
 
 ## Run locally
 
@@ -21,23 +21,20 @@ npm i
 npm run dev
 ```
 
-The Vite dev server listens on http://localhost:8080.
+Dev server: http://localhost:8080
 
 ## Deploy
 
-Pushes to `main` build the site and update the `gh-pages` branch.
+Push to `main`. The workflow builds and updates the `gh-pages` branch.
 
-For TMDB search/posters on GitHub Pages, add a repository secret:
+GitHub Pages needs the Actions secret `VITE_TMDB_API_KEY`:
 
-1. Open https://github.com/Shaftwell/movie-rank-shuffle/settings/secrets/actions
-2. New repository secret named `VITE_TMDB_API_KEY`
-3. Paste your TMDB v3 API key
-4. Re-run **Deploy to GitHub Pages** if the last build had an empty key
+https://github.com/Shaftwell/movie-rank-shuffle/settings/secrets/actions
 
-Restrict that key to `https://shaftwell.github.io/*` and `http://localhost:8080/*` in the TMDB dashboard.
+Restrict that TMDB key to `https://shaftwell.github.io/*` and `http://localhost:8080/*`.
 
 ## Stack
 
 Vite, TypeScript, React, shadcn/ui, Tailwind CSS, TMDB API, `@hello-pangea/dnd`.
 
-Movie data is stored in the browser (`localStorage`). There is no backend.
+Movie data lives in the browser (`localStorage`). There is no backend.

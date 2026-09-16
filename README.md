@@ -4,11 +4,9 @@ Personal Top 100 movie rankings with TMDB posters, drag-and-drop order, search, 
 
 ## Live sites
 
-- **Lovable (live now):** https://movie-rank-shuffle.lovable.app/
 - **GitHub Pages:** https://shaftwell.github.io/movie-rank-shuffle/
+- **Lovable:** https://movie-rank-shuffle.lovable.app/
 - **Source:** https://github.com/Shaftwell/movie-rank-shuffle
-
-GitHub Pages needs a one-time switch in repo settings (see Deploy below). The `gh-pages` branch is already published by Actions.
 
 ## Run locally
 
@@ -18,34 +16,28 @@ Requires Node.js 18+ and npm.
 git clone https://github.com/Shaftwell/movie-rank-shuffle.git
 cd movie-rank-shuffle
 cp .env.example .env
-# set VITE_TMDB_API_KEY in .env (optional; a fallback key is currently in source)
+# set VITE_TMDB_API_KEY in .env
 npm i
 npm run dev
 ```
 
 The Vite dev server listens on http://localhost:8080.
 
-```sh
-npm run build    # production build to dist/
-npm run preview  # serve the production build locally
-```
-
 ## Deploy
 
-Pushes to `main` build the site and update the `gh-pages` branch
-(`.github/workflows/deploy-pages.yml`).
+Pushes to `main` build the site and update the `gh-pages` branch.
 
-Enable the public Pages URL once:
+For TMDB search/posters on GitHub Pages, add a repository secret:
 
-1. Open https://github.com/Shaftwell/movie-rank-shuffle/settings/pages
-2. Under **Build and deployment → Source**, choose **Deploy from a branch**
-3. Branch: **gh-pages**, folder: **/ (root)**
-4. Save
+1. Open https://github.com/Shaftwell/movie-rank-shuffle/settings/secrets/actions
+2. New repository secret named `VITE_TMDB_API_KEY`
+3. Paste your TMDB v3 API key
+4. Re-run **Deploy to GitHub Pages** if the last build had an empty key
 
-The site will be at https://shaftwell.github.io/movie-rank-shuffle/ a minute later.
+Restrict that key to `https://shaftwell.github.io/*` and `http://localhost:8080/*` in the TMDB dashboard.
 
 ## Stack
 
-Vite, TypeScript, React, shadcn/ui, Tailwind CSS, TMDB API.
+Vite, TypeScript, React, shadcn/ui, Tailwind CSS, TMDB API, `@hello-pangea/dnd`.
 
 Movie data is stored in the browser (`localStorage`). There is no backend.

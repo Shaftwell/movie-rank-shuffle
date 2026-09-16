@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import MovieCard from './MovieCard';
 import { Movie } from '@/types/movie';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ const DraggableMovieList = React.memo(({
   movies,
   onDragEnd,
   onEditMovie,
-  clearFilters
+  clearFilters,
 }: DraggableMovieListProps) => {
   if (movies.length === 0) {
     return (
@@ -39,9 +38,9 @@ const DraggableMovieList = React.memo(({
             className="space-y-4"
           >
             {movies.map((movie, index) => (
-              <Draggable 
-                key={movie.id.toString()} 
-                draggableId={movie.id.toString()} 
+              <Draggable
+                key={movie.id.toString()}
+                draggableId={movie.id.toString()}
                 index={index}
               >
                 {(provided, snapshot) => (
@@ -49,15 +48,15 @@ const DraggableMovieList = React.memo(({
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     className="animate-fade-in"
-                    style={{ 
-                      animationDelay: `${index * 25}ms`, 
-                      ...provided.draggableProps.style 
+                    style={{
+                      animationDelay: `${index * 25}ms`,
+                      ...provided.draggableProps.style,
                     }}
                   >
                     <MovieCard
                       movie={movie}
                       isDragging={snapshot.isDragging}
-                      dragHandleProps={provided.dragHandleProps}
+                      dragHandleProps={provided.dragHandleProps ?? undefined}
                       onEditMovie={onEditMovie}
                     />
                   </div>

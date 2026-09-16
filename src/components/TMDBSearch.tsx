@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TMDBMovie } from '@/types/movie';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TMDB_IMAGE_URL } from '@/services/tmdbService';
+import { TMDB_IMAGE_URL, searchMovies, isTmdbConfigured } from '@/services/tmdbService';
 import { useToast } from '@/hooks/use-toast';
 
 interface TMDBSearchProps {
@@ -20,83 +20,71 @@ const TMDBSearch = ({ onSelectMovie, initialQuery = '' }: TMDBSearchProps) => {
   const [year, setYear] = useState<string>('');
   const { toast } = useToast();
 
-  // Debounced search function
-  const performSearch = useCallback(async (query: string, searchYear?: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    setError('');
-
-    try {
-      // Try to get API key from env, fallback to direct value if not available
-      const apiKey = import.meta.env.VITE_TMDB_API_KEY || '2dca580c2a14b55200e784d157207b4d';
-
-      if (!apiKey) {
-        throw new Error('TMDB API key not configured');
-      }
-
-      let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}&include_adult=false`;
-
-      if (searchYear && searchYear.trim()) {
-        searchUrl += `&year=${searchYear}`;
-      }
-
-      const response = await fetch(searchUrl);
-
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.results && data.results.length > 0) {
-        setSearchResults(data.results);
-        setError('');
-      } else {
+  const performSearch = useCallback(
+    async (query: string, searchYear?: string) => {
+      if (!query.trim()) {
         setSearchResults([]);
-        setError('No movies found. Try a different search term or year.');
+        return;
       }
-    } catch (err) {
-      console.error('Error searching TMDB:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search';
-      setError(errorMessage);
-      setSearchResults([]);
 
-      toast({
-        title: "Search Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  }, [toast]);
+      if (!isTmdbConfigured()) {
+        const message = 'TMDB API key not configured';
+        setError(message);
+        toast({ title: 'Search Error', description: message, variant: 'destructive' });
+        return;
+      }
 
-  // Auto-search when query changes (with debounce)
+      setIsSearching(true);
+      setError('');
+
+      try {
+        const yearValue = searchYear?.trim() ? Number(searchYear) : undefined;
+        const results = await searchMovies(query, yearValue);
+        if (results.length > 0) {
+          setSearchResults(results);
+          setError('');
+        } else {
+          setSearchResults([]);
+          setError('No movies found. Try a different search term or year.');
+        }
+      } catch (err) {
+        console.error('Error searching TMDB:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to search';
+        setError(errorMessage);
+        setSearchResults([]);
+        toast({
+          title: 'Search Error',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [toast]
+  );
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchQuery.trim()) {
-        performSearch(searchQuery, year);
+        void performSearch(searchQuery, year);
       } else {
         setSearchResults([]);
         setError('');
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, year, performSearch]);
 
   const handleSearch = () => {
-    performSearch(searchQuery, year);
+    void performSearch(searchQuery, year);
   };
 
   const handleMovieSelect = (movie: TMDBMovie) => {
     onSelectMovie(movie);
     toast({
-      title: "Movie Selected",
+      title: 'Movie Selected',
       description: `"${movie.title}" has been selected.`,
     });
   };

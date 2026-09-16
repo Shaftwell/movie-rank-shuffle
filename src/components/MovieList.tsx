@@ -1,4 +1,3 @@
-
 import React from 'react';
 import MovieFilters from './MovieFilters';
 import MovieSortControls from './MovieSortControls';
@@ -38,23 +37,17 @@ const MovieList = ({ initialMovies }: MovieListProps) => {
     setIsEditDialogOpen,
     setEditingMovie,
     clearFilters,
-    importRankings
+    importRankings,
   } = useMovieData(initialMovies);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95">
+    <div className="bg-gradient-to-b from-background via-background to-background/95">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
         <div className="flex flex-col gap-6 mb-10">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-2">
-                My Top 100 Movies
-              </h1>
-              <p className="text-muted-foreground text-sm md:text-base">
-                Curated rankings of cinematic masterpieces
-              </p>
-            </div>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Drag to rerank. Search and filter without resetting the rest of the list.
+            </p>
             <div className="flex flex-wrap gap-2">
               <ShareDialog movies={movies} onImportRankings={importRankings} />
               <MovieSortControls

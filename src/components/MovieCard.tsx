@@ -1,5 +1,5 @@
 import React from 'react';
-import { Movie } from '@/types/movie';
+import { Movie, getMovieScore } from '@/types/movie';
 import { cn } from '@/lib/utils';
 import { Film, Calendar, Edit, User, Star, StarHalf, Users } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -19,59 +19,46 @@ const StarRating = ({ rating }: { rating: number }) => {
 
   for (let i = 0; i < 5; i++) {
     if (i < fullStars) {
-      stars.push(
-        <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-      );
+      stars.push(<Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />);
     } else if (i === fullStars && hasHalfStar) {
-      stars.push(
-        <StarHalf key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-      );
+      stars.push(<StarHalf key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />);
     } else {
-      stars.push(
-        <Star key={i} className="h-3.5 w-3.5 text-muted-foreground/30" />
-      );
+      stars.push(<Star key={i} className="h-3.5 w-3.5 text-muted-foreground/30" />);
     }
   }
 
   return <div className="flex gap-0.5">{stars}</div>;
 };
 
-const MovieCard = React.memo(({
-  movie,
-  isDragging,
-  dragHandleProps,
-  onEditMovie
-}: MovieCardProps) => {
+const MovieCard = React.memo(({ movie, isDragging, dragHandleProps, onEditMovie }: MovieCardProps) => {
+  const score = getMovieScore(movie);
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onEditMovie) {
-      onEditMovie(movie.id);
-    }
+    onEditMovie?.(movie.id);
   };
 
   return (
     <Card
       className={cn(
-        "group relative overflow-hidden transition-all duration-300 cursor-move border-muted/40",
-        "hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/30 hover:scale-[1.01]",
-        isDragging && "opacity-70 scale-95 shadow-2xl rotate-1"
+        'group relative overflow-hidden transition-all duration-300 cursor-move border-muted/40',
+        'hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/30 hover:scale-[1.01]',
+        isDragging && 'opacity-70 scale-95 shadow-2xl rotate-1'
       )}
       {...dragHandleProps}
     >
       <div className="flex items-stretch min-h-[180px] sm:min-h-[200px] relative overflow-hidden">
-        {/* Rank Badge */}
         <div className="absolute top-3 left-3 z-20">
           <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-lg px-3 py-1.5 font-bold text-base shadow-lg backdrop-blur-sm border border-primary-foreground/20">
             #{movie.rank}
           </div>
         </div>
 
-        {/* Poster with Gradient Overlay */}
         <div className="relative w-32 sm:w-40 md:w-48 flex-shrink-0 overflow-hidden">
           {movie.imageUrl ? (
             <>
               <img
-                src={movie.imageUrl.replace('w200', 'w500')}
+                src={movie.imageUrl.replace('/w200/', '/w500/')}
                 alt={`${movie.title} poster`}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
               />
@@ -84,15 +71,12 @@ const MovieCard = React.memo(({
           )}
         </div>
 
-        {/* Movie Info */}
         <div className="flex-1 flex flex-col justify-between p-4 sm:p-5 md:p-6 min-w-0">
           <div className="flex-1">
-            {/* Title */}
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 leading-tight line-clamp-2">
               {movie.title}
             </h3>
 
-            {/* Year and Genre */}
             <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-muted-foreground mb-3">
               {movie.year && (
                 <span className="flex items-center gap-1.5 font-medium">
@@ -110,22 +94,24 @@ const MovieCard = React.memo(({
               )}
             </div>
 
-            {/* Rating */}
-            {movie.rottenTomatoesScore !== undefined && (
+            {score !== undefined && (
               <div className="flex items-center gap-3 mb-3">
-                <StarRating rating={movie.rottenTomatoesScore / 10} />
-                <span className={cn(
-                  "text-sm font-bold",
-                  movie.rottenTomatoesScore >= 70 ? "text-green-600 dark:text-green-400" :
-                  movie.rottenTomatoesScore >= 50 ? "text-yellow-600 dark:text-yellow-400" :
-                  "text-red-600 dark:text-red-400"
-                )}>
-                  {(movie.rottenTomatoesScore / 10).toFixed(1)}
+                <StarRating rating={score / 10} />
+                <span
+                  className={cn(
+                    'text-sm font-bold',
+                    score >= 70
+                      ? 'text-green-600 dark:text-green-400'
+                      : score >= 50
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-red-600 dark:text-red-400'
+                  )}
+                >
+                  {(score / 10).toFixed(1)}
                 </span>
               </div>
             )}
 
-            {/* Director */}
             {movie.director && (
               <div className="flex items-start gap-2 text-sm mb-2.5">
                 <User className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary/70" />
@@ -136,7 +122,6 @@ const MovieCard = React.memo(({
               </div>
             )}
 
-            {/* Cast */}
             {movie.actors && movie.actors.length > 0 && (
               <div className="flex items-start gap-2 text-sm">
                 <Users className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary/70" />
@@ -148,7 +133,6 @@ const MovieCard = React.memo(({
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex gap-2 mt-4 pt-4 border-t border-muted/30">
             <TooltipProvider>
               <Tooltip>
@@ -161,9 +145,7 @@ const MovieCard = React.memo(({
                     <span className="hidden sm:inline">Edit</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  Edit movie details
-                </TooltipContent>
+                <TooltipContent>Edit movie details</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
